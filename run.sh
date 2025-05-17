@@ -1,13 +1,8 @@
 #!/bin/bash 
 
 cd ./backend
-# To set up rust compiler in nightly version
-rustup override set nightly
-cargo build 
+cargo run &
 
 cd ../frontend
-npm install
-npm run build 
+npm run dev
 
-cd ../backend
-cargo run
