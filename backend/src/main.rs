@@ -3,7 +3,6 @@ extern crate rocket;
 
 use rocket::serde::json::Json;
 use rocket::{http::Status, State};
-use rocket_db_pools::{sqlx, Database};
 use rocket_okapi::okapi::openapi3::OpenApi;
 use rocket_okapi::settings::UrlObject;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
@@ -14,21 +13,15 @@ mod api;
 mod models;
 use models::Group;
 
-#[derive(Database)]
-#[database("sqlite_logs")]
-struct Logs(sqlx::SqlitePool);
-
 #[launch]
 fn rocket() -> _ {
-    let mut building_rocket = rocket::build()
-        .mount(
-            "/swagger-ui/",
-            make_swagger_ui(&SwaggerUIConfig {
-                url: "../openapi.json".to_owned(),
-                ..Default::default()
-            }),
-        )
-        .attach(Logs::init());
+    let mut building_rocket = rocket::build().mount(
+        "/swagger-ui/",
+        make_swagger_ui(&SwaggerUIConfig {
+            url: "../openapi.json".to_owned(),
+            ..Default::default()
+        }),
+    );
 
     let openapi_settings = rocket_okapi::settings::OpenApiSettings::default();
     let custom_route_spec = (vec![], custom_openapi_spec());
