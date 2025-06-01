@@ -1,9 +1,133 @@
-use rocket_okapi::okapi::schemars::{self, JsonSchema};
+use crate::schema::*;
+use chrono::NaiveDateTime;
+use diesel::prelude::*;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = balances)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct Balance {
+    pub id: Option<i32>,
+    pub debtor_user_id: i32,
+    pub creditor_user_id: i32,
+    pub amount: f64,
+    pub group_id: Option<i32>,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = expense_participations)]
+#[primary_key(expense_id, user_id)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct ExpenseParticipation {
+    pub expense_id: i32,
+    pub user_id: i32,
+    pub amount_due: Option<f64>,
+    pub percentage_due: Option<f64>,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = expenses)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct Expense {
+    pub id: Option<i32>,
+    pub desc: String,
+    pub total_amount: f64,
+    pub expense_date: NaiveDateTime,
+    pub registration_date: NaiveDateTime,
+    pub user_id: i32,
+    pub group_id: Option<i32>,
+    pub division_type: Option<String>,
+    pub division_participants: Option<String>,
+    pub personal_beneficiary_user_id: Option<i32>,
+    pub attachments: Option<String>,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[primary_key(group_id, user_id)]
+#[diesel(table_name = group_administrators)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct GroupAdministrator {
+    pub group_id: i32,
+    pub user_id: i32,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = group_invites)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct GroupInvite {
+    pub id: Option<i32>,
+    pub group_id: i32,
+    pub invited_user_id: i32,
+    pub inviting_user_id: i32,
+    pub invite_date: NaiveDateTime,
+    pub invite_status: Option<String>,
+    pub optional_message: Option<String>,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[primary_key(group_id, user_id)]
+#[diesel(table_name = group_members)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct GroupMember {
+    pub group_id: i32,
+    pub user_id: i32,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = groups)]
+#[diesel(check_for_backend(Sqlite))]
 pub struct Group {
-    pub id: Option<usize>,
-    pub name: String,
-    pub description: String,
+    pub id: Option<i32>,
+    pub group_name: String,
+    pub desc: Option<String>,
+    pub creation_date: NaiveDateTime,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[primary_key(user_id)]
+#[diesel(table_name = notification_preferences)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct NotificationPreference {
+    pub user_id: Option<i32>,
+    pub notify_new_group_expense: bool,
+    pub notify_group_expense_modified: bool,
+    pub notify_group_invite: bool,
+    pub notify_personal_debt: bool,
+    pub send_email_new_group_expense: bool,
+    pub send_email_group_invite: bool,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = notifications)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct Notification {
+    pub id: Option<i32>,
+    pub recipient_user_id: i32,
+    pub notification_type: Option<String>,
+    pub message: String,
+    pub creation_date: NaiveDateTime,
+    pub read: bool,
+    pub referenced_object: Option<i32>,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = users)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct User {
+    pub id: Option<i32>,
+    pub username: String,
+    pub email: String,
+    pub password_hash: String,
+    pub account_status: Option<String>,
+    pub auth_provider: Option<String>,
+    pub google_id: Option<String>,
+    pub activation_token: Option<String>,
+    pub activation_token_expiry: Option<NaiveDateTime>,
+    pub reset_password_token: Option<String>,
+    pub reset_password_token_expiry: Option<NaiveDateTime>,
+    pub registration_date: NaiveDateTime,
+    pub last_login: Option<NaiveDateTime>,
+    pub preferred_language: String,
+    pub notification_preferences: Option<String>,
 }

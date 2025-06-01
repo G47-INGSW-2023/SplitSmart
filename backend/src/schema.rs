@@ -1,0 +1,141 @@
+// @generated automatically by Diesel CLI.
+
+diesel::table! {
+    balances (id) {
+        id -> Nullable<Integer>,
+        debtor_user_id -> Integer,
+        creditor_user_id -> Integer,
+        amount -> Double,
+        group_id -> Nullable<Integer>,
+    }
+}
+
+diesel::table! {
+    expense_participations (expense_id, user_id) {
+        expense_id -> Integer,
+        user_id -> Integer,
+        amount_due -> Nullable<Double>,
+        percentage_due -> Nullable<Double>,
+    }
+}
+
+diesel::table! {
+    expenses (id) {
+        id -> Nullable<Integer>,
+        desc -> Text,
+        total_amount -> Double,
+        expense_date -> Timestamp,
+        registration_date -> Timestamp,
+        user_id -> Integer,
+        group_id -> Nullable<Integer>,
+        division_type -> Nullable<Text>,
+        division_participants -> Nullable<Text>,
+        personal_beneficiary_user_id -> Nullable<Integer>,
+        attachments -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
+    group_administrators (group_id, user_id) {
+        group_id -> Integer,
+        user_id -> Integer,
+    }
+}
+
+diesel::table! {
+    group_invites (id) {
+        id -> Nullable<Integer>,
+        group_id -> Integer,
+        invited_user_id -> Integer,
+        inviting_user_id -> Integer,
+        invite_date -> Timestamp,
+        invite_status -> Nullable<Text>,
+        optional_message -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
+    group_members (group_id, user_id) {
+        group_id -> Integer,
+        user_id -> Integer,
+    }
+}
+
+diesel::table! {
+    groups (id) {
+        id -> Nullable<Integer>,
+        group_name -> Text,
+        desc -> Nullable<Text>,
+        creation_date -> Timestamp,
+    }
+}
+
+diesel::table! {
+    notification_preferences (user_id) {
+        user_id -> Nullable<Integer>,
+        notify_new_group_expense -> Bool,
+        notify_group_expense_modified -> Bool,
+        notify_group_invite -> Bool,
+        notify_personal_debt -> Bool,
+        send_email_new_group_expense -> Bool,
+        send_email_group_invite -> Bool,
+    }
+}
+
+diesel::table! {
+    notifications (id) {
+        id -> Nullable<Integer>,
+        recipient_user_id -> Integer,
+        notification_type -> Nullable<Text>,
+        message -> Text,
+        creation_date -> Timestamp,
+        read -> Bool,
+        referenced_object -> Nullable<Integer>,
+    }
+}
+
+diesel::table! {
+    users (id) {
+        id -> Nullable<Integer>,
+        username -> Text,
+        email -> Text,
+        password_hash -> Text,
+        account_status -> Nullable<Text>,
+        auth_provider -> Nullable<Text>,
+        google_id -> Nullable<Text>,
+        activation_token -> Nullable<Text>,
+        activation_token_expiry -> Nullable<Timestamp>,
+        reset_password_token -> Nullable<Text>,
+        reset_password_token_expiry -> Nullable<Timestamp>,
+        registration_date -> Timestamp,
+        last_login -> Nullable<Timestamp>,
+        preferred_language -> Text,
+        notification_preferences -> Nullable<Text>,
+    }
+}
+
+diesel::joinable!(balances -> groups (group_id));
+diesel::joinable!(expense_participations -> expenses (expense_id));
+diesel::joinable!(expense_participations -> users (user_id));
+diesel::joinable!(expenses -> groups (group_id));
+diesel::joinable!(expenses -> users (user_id));
+diesel::joinable!(group_administrators -> groups (group_id));
+diesel::joinable!(group_administrators -> users (user_id));
+diesel::joinable!(group_invites -> groups (group_id));
+diesel::joinable!(group_members -> groups (group_id));
+diesel::joinable!(group_members -> users (user_id));
+diesel::joinable!(notification_preferences -> users (user_id));
+diesel::joinable!(notifications -> users (recipient_user_id));
+
+diesel::allow_tables_to_appear_in_same_query!(
+    balances,
+    expense_participations,
+    expenses,
+    group_administrators,
+    group_invites,
+    group_members,
+    groups,
+    notification_preferences,
+    notifications,
+    users,
+);

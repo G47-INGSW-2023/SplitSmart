@@ -1,17 +1,30 @@
 #[macro_use]
 extern crate rocket;
 
+use diesel::prelude::*;
 use rocket::serde::json::Json;
 use rocket::{http::Status, State};
 use rocket_okapi::okapi::openapi3::OpenApi;
 use rocket_okapi::settings::UrlObject;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
+use rocket_sync_db_pools::database;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 mod api;
 mod models;
-use models::Group;
+mod schema;
+
+use dotenvy::dotenv;
+use std::env;
+
+pub fn establish_connection() -> SqliteConnection {
+    dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    SqliteConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+}
 
 #[launch]
 fn rocket() -> _ {
