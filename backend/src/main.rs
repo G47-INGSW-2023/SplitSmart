@@ -43,6 +43,7 @@ fn rocket() -> _ {
         "/external" => custom_route_spec,
         //"/post" => post::get_routes_and_docs(&openapi_settings),
         "/groups" => api::groups::get_routes_and_docs(&openapi_settings),
+        "/user" => api::users::get_routes_and_docs(&openapi_settings),
     };
 
     building_rocket
