@@ -103,9 +103,11 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
 
     match existing_user {
         Ok(count) if count > 0 => {
+            error!("requested user registration but user already exists");
             return Status::Conflict; // 409 Conflict
         }
         Err(_) => {
+            error!("internal error when searching for existing user in register request");
             return Status::InternalServerError;
         }
         _ => {} // User does not exist, proceed
@@ -116,7 +118,10 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
     let hashed_pass =
         match Argon2::default().hash_password(register_data.password.as_bytes(), &salt) {
             Ok(hash) => hash.to_string(),
-            Err(_) => return Status::InternalServerError,
+            Err(_) => {
+                error!("error hashing password when registering user");
+                return Status::InternalServerError;
+            }
         };
 
     // Insert the new user into the database and retrieve the created record
@@ -127,11 +132,14 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
             password_hash.eq(hashed_pass),
             registration_date.eq(Utc::now().naive_utc()),
             preferred_language.eq("it"),
-            account_status.eq("active"),
+            account_status.eq("ACTIVE"),
         ))
         .execute(&mut conn)
     {
         Ok(_) => Status::Ok,
-        Err(_) => Status::InternalServerError,
+        Err(e) => {
+            error!("could not add user to database when registering: {}", e);
+            Status::InternalServerError
+        }
     }
 }
