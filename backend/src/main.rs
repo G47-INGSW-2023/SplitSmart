@@ -4,6 +4,7 @@ extern crate rocket;
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 use rocket::{http::Status, State};
+use rocket_cors::{AllowedOrigins, CorsOptions};
 use rocket_okapi::okapi::openapi3::OpenApi;
 use rocket_okapi::settings::UrlObject;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
@@ -28,7 +29,11 @@ pub fn establish_connection() -> SqliteConnection {
 
 #[launch]
 fn rocket() -> _ {
-    let mut building_rocket = rocket::build().mount(
+    let cors = CorsOptions::default()
+        .to_cors()
+        .expect("error creating CORS fairing");
+
+    let mut building_rocket = rocket::build().attach(cors).mount(
         "/swagger-ui/",
         make_swagger_ui(&SwaggerUIConfig {
             url: "../openapi.json".to_owned(),

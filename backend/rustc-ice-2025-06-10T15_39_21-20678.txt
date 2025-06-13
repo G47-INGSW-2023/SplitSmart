@@ -1,0 +1,32 @@
+thread 'rustc' panicked at compiler/rustc_query_impl/src/plumbing.rs:443:9:
+Failed to recover key for resolve_bound_vars(978b9f15e1e1c1cf-830499c40a68216b) with hash 978b9f15e1e1c1cf-830499c40a68216b
+stack backtrace:
+   0:     0x76bd284cc665 - std::backtrace::Backtrace::create::hc21e599262d351fb
+   1:     0x76bd268cde85 - std::backtrace::Backtrace::force_capture::h17d9d7e5175bd88b
+   2:     0x76bd2595c3c1 - std[578a540cb1055794]::panicking::update_hook::<alloc[c7bac661b78ee32a]::boxed::Box<rustc_driver_impl[b0be92c9b081b175]::install_ice_hook::{closure#1}>>::{closure#0}
+   3:     0x76bd268e77e3 - std::panicking::rust_panic_with_hook::hd7119d7cf1d6a8a6
+   4:     0x76bd268e74da - std::panicking::begin_panic_handler::{{closure}}::hf5929578e2038605
+   5:     0x76bd268e3c69 - std::sys::backtrace::__rust_end_short_backtrace::h5904f09f45ae42e5
+   6:     0x76bd268e719d - __rustc[370de465637bfaa7]::rust_begin_unwind
+   7:     0x76bd23289e00 - core::panicking::panic_fmt::h5acbb1dde8a99479
+   8:     0x76bd2872be57 - <rustc_query_impl[c0a700bc271d3d61]::plumbing::query_callback<rustc_query_impl[c0a700bc271d3d61]::query_impl::resolve_bound_vars::QueryType>::{closure#1} as core[73e3539c07be93ec]::ops::function::FnOnce<(rustc_middle[765a8dd7c8651dad]::ty::context::TyCtxt, rustc_query_system[fc17e5d2cc829803]::dep_graph::dep_node::DepNode)>>::call_once.cold
+   9:     0x76bd271bfc6b - <rustc_middle[765a8dd7c8651dad]::query::on_disk_cache::OnDiskCache>::drop_serialized_data
+  10:     0x76bd27f05142 - rustc_incremental[160987001503c15d]::persist::save::save_dep_graph::{closure#0}::{closure#3}
+  11:     0x76bd27f035e1 - rustc_middle[765a8dd7c8651dad]::ty::context::tls::with_context::<<rustc_middle[765a8dd7c8651dad]::dep_graph::DepsType as rustc_query_system[fc17e5d2cc829803]::dep_graph::Deps>::with_deps<rustc_incremental[160987001503c15d]::persist::save::save_dep_graph::{closure#0}, ()>::{closure#0}, ()>::{closure#0}
+  12:     0x76bd27f03202 - <rustc_incremental[160987001503c15d]::provide::{closure#0} as core[73e3539c07be93ec]::ops::function::FnOnce<(rustc_middle[765a8dd7c8651dad]::ty::context::TyCtxt,)>>::call_once
+  13:     0x76bd27f02c6c - <rustc_middle[765a8dd7c8651dad]::ty::context::TyCtxt>::finish
+  14:     0x76bd27f003b7 - rustc_interface[c20367986e3c43b9]::passes::create_and_enter_global_ctxt::<core[73e3539c07be93ec]::option::Option<rustc_interface[c20367986e3c43b9]::queries::Linker>, rustc_driver_impl[b0be92c9b081b175]::run_compiler::{closure#0}::{closure#2}>::{closure#2}::{closure#0}
+  15:     0x76bd28116804 - rustc_interface[c20367986e3c43b9]::interface::run_compiler::<(), rustc_driver_impl[b0be92c9b081b175]::run_compiler::{closure#0}>::{closure#1}
+  16:     0x76bd27f08668 - std[578a540cb1055794]::sys::backtrace::__rust_begin_short_backtrace::<rustc_interface[c20367986e3c43b9]::util::run_in_thread_with_globals<rustc_interface[c20367986e3c43b9]::util::run_in_thread_pool_with_globals<rustc_interface[c20367986e3c43b9]::interface::run_compiler<(), rustc_driver_impl[b0be92c9b081b175]::run_compiler::{closure#0}>::{closure#1}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>
+  17:     0x76bd27f08f6b - <<std[578a540cb1055794]::thread::Builder>::spawn_unchecked_<rustc_interface[c20367986e3c43b9]::util::run_in_thread_with_globals<rustc_interface[c20367986e3c43b9]::util::run_in_thread_pool_with_globals<rustc_interface[c20367986e3c43b9]::interface::run_compiler<(), rustc_driver_impl[b0be92c9b081b175]::run_compiler::{closure#0}>::{closure#1}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>::{closure#1} as core[73e3539c07be93ec]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  18:     0x76bd27f0a377 - std::sys::pal::unix::thread::Thread::new::thread_start::hd6f89f3f1c8122ca
+  19:     0x76bd21ea57eb - <unknown>
+  20:     0x76bd21f2918c - <unknown>
+  21:                0x0 - <unknown>
+
+
+rustc version: 1.88.0-nightly (38c560ae6 2025-04-15)
+platform: x86_64-unknown-linux-gnu
+
+query stack during panic:
+end of query stack

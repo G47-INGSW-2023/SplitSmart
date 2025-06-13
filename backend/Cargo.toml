@@ -9,6 +9,7 @@ chrono = { version = "0.4.41", features = ["serde"] }
 diesel = { version = "2.2.10", features = ["chrono", "sqlite", "uuid"] }
 dotenvy = "0.15.7"
 rocket = { version = "0.5.1", features = ["json", "serde_json"] }
+rocket_cors = "0.6.0"
 rocket_okapi = { version = "0.9.0", features = ["rocket_db_pools", "swagger"] }
 rocket_sync_db_pools = { version = "0.1.0", features = ["diesel_sqlite_pool"] }
 schemars = { version = "0.8.22", features = ["chrono"] }
