@@ -1,6 +1,6 @@
 use crate::{
     establish_connection,
-    models::{self, Group, User},
+    models::{Group, User},
     schema::group_members,
 };
 use chrono::{NaiveDateTime, Utc};
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_member,remove_member]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_member,remove_member,promote_to_admin,demote_admin]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -173,7 +173,7 @@ fn invite_member(gid: i32, user_to_invite: Json<InviteUser>) -> Status {
 fn remove_member(gid: i32, uid: i32) -> Status {
     let mut conn = establish_connection();
     use crate::schema::group_members::dsl::*;
-    use crate::schema::users::dsl::*;
+    //use crate::schema::users::dsl::*;
 
     let result = diesel::delete(
         group_members
@@ -185,6 +185,57 @@ fn remove_member(gid: i32, uid: i32) -> Status {
     match result {
         Ok(rows_deleted) if rows_deleted > 0 => Status::Ok, // Successfully deleted
         Ok(_) => Status::NotFound,                          // User was not a member of the group
+        Err(_) => Status::InternalServerError,              // An error occurred
+    }
+}
+
+#[openapi(tag = "Groups")]
+#[post("/<gid>/admins/<uid>")]
+fn promote_to_admin(gid: i32, uid: i32) -> Status {
+    let mut conn = establish_connection();
+    use crate::schema::users::dsl::*;
+
+    match users.filter(id.eq(uid)).first::<User>(&mut conn) {
+        Ok(_) => (),
+        Err(_) => return Status::NotFound,
+    };
+
+    match groups
+        .filter(crate::schema::groups::columns::id.eq(gid))
+        .first::<Group>(&mut conn)
+    {
+        Ok(_) => (),
+        Err(_) => return Status::NotFound,
+    };
+
+    use crate::schema::group_administrators::dsl::*;
+
+    let result = (group_id.eq(gid), user_id.eq(uid))
+        .insert_into(group_administrators)
+        .execute(&mut conn);
+
+    match result {
+        Ok(_) => Status::Ok,
+        Err(_) => Status::InternalServerError,
+    }
+}
+
+#[openapi(tag = "Groups")]
+#[delete("/<gid>/admins/<uid>")]
+fn demote_admin(gid: i32, uid: i32) -> Status {
+    let mut conn = establish_connection();
+    use crate::schema::group_administrators::dsl::*;
+
+    let result = diesel::delete(
+        group_administrators
+            .filter(group_id.eq(gid))
+            .filter(user_id.eq(gid)),
+    )
+    .execute(&mut conn);
+
+    match result {
+        Ok(deleted_rows) if deleted_rows > 0 => Status::Ok, // Successfully deleted
+        Ok(_) => Status::NotFound,                          // User was not an admin
         Err(_) => Status::InternalServerError,              // An error occurred
     }
 }
