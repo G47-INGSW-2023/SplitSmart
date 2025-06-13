@@ -4,25 +4,35 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Funzione helper per gestire le risposte e gli errori comuni
 async function handleResponse(response: Response) {
+  // La gestione degli errori rimane la stessa, perché di solito gli errori hanno un corpo JSON
   if (!response.ok) {
-    // Prova a leggere il corpo dell'errore per un messaggio più specifico
     const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.message || `Errore: ${response.status} ${response.statusText}`;
+    const errorMessage = errorData.detail || errorData.message || `Errore: ${response.status} ${response.statusText}`;
     throw new Error(errorMessage);
   }
-  return response.json();
+
+  const text = await response.text();
+  if (!text) {
+    return undefined; 
+  }
+  
+  return JSON.parse(text);
 }
 
 // Funzione di login simulata
 export const api = {
   login: async (credentials: LoginCredentials): Promise<{ token: string }> => {
-    const response = await fetch(`${API_BASE_URL}/login`, {
+    const response = await fetch(`${API_BASE_URL}/user/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(credentials),
     });
+    const data = await handleResponse(response);
+      if (!data || !data.token) {
+      throw new Error("La risposta del server per il login non contiene un token.");
+    }
     return handleResponse(response);
   },
 
@@ -32,13 +42,14 @@ export const api = {
    * es: { "message": "Registrazione avvenuta, controlla la tua email." }
    */
   register: async (data: UserRegisterData): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/register`, {
+    const response = await fetch(`${API_BASE_URL}/user/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
     });
+    await handleResponse(response); // Qui non ci interessa il valore di ritorno
     return handleResponse(response);
   },
 
@@ -53,6 +64,12 @@ export const api = {
         'Authorization': `Bearer ${token}`,
       },
     });
+     const userData = await handleResponse(response);
+    
+    // ---- CONTROLLO CRUCIALE ----
+    if (!userData) {
+      throw new Error("La risposta del server per recuperare l'utente è vuota.");
+    }
     return handleResponse(response);
   },
 

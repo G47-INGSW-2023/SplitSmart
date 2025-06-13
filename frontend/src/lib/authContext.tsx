@@ -43,9 +43,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [loadUserFromToken]);
 
-  const login = async (newToken: string) => {
-    localStorage.setItem('authToken', newToken);
-    await loadUserFromToken(newToken); // Carica i dati dell'utente dopo aver ricevuto il token
+   const login = async (newToken: string) => {
+    try {
+      // Il context ora è responsabile di recuperare i dati dell'utente
+      const userData = await api.getMe(newToken); 
+      
+      // Se api.getMe ha successo, userData è un oggetto User valido
+      setUser(userData);
+      localStorage.setItem('authToken', newToken);
+
+    } catch (error) {
+      console.error("Errore durante il recupero dei dati utente dopo il login:", error);
+      // Se getMe fallisce, il login non è completo, quindi facciamo il logout
+      logout();
+      // Rilancia l'errore in modo che il form possa mostrarlo all'utente
+      throw error;
+    }
   };
 
   const logout = () => {

@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 export const RegisterForm = () => {
-  const [nome, setNome] = useState('');
+  const [username, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,7 +32,7 @@ export const RegisterForm = () => {
 
     setIsLoading(true);
     try {
-       const response = await api.register({ nome, email, password });
+       const response = await api.register({ username, email, password });
         setSuccess(response.message || 'Registrazione completata! Controlla la tua email.');
         
         setTimeout(() => {
@@ -58,7 +58,7 @@ export const RegisterForm = () => {
             id="name"
             type="text"
             placeholder="Mario Rossi"
-            value={nome}
+            value={username}
             onChange={(e) => setNome(e.target.value)}
             required
             disabled={isLoading || !!success}
