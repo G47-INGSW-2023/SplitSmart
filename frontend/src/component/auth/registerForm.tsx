@@ -32,13 +32,12 @@ export const RegisterForm = () => {
 
     setIsLoading(true);
     try {
-      await api.register(nome, email, password);
-      setSuccess('Registrazione avvenuta con successo! Verrai reindirizzato al login...');
-      
-      // Reindirizza al login dopo un breve ritardo per far leggere il messaggio
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+       const response = await api.register({ nome, email, password });
+        setSuccess(response.message || 'Registrazione completata! Controlla la tua email.');
+        
+        setTimeout(() => {
+            router.push('/login');
+        }, 3000);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Si è verificato un errore');

@@ -1,46 +1,64 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { api } from './api';
 import type { User } from '@/types';
 
-// Definiamo cosa conterrà il nostro Context
 interface AuthContextType {
   user: User | null;
-  login: (userData: User) => void;
+  token: string | null; // Aggiungiamo il token
+  isLoading: boolean;
+  login: (token: string) => Promise<void>; // Login ora accetta un token
   logout: () => void;
-  isLoading: boolean; // Utile per sapere se stiamo ancora verificando l'utente
 }
 
-// Creiamo il Context con un valore di default
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Creiamo il Provider, il componente che "fornirà" il contesto
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Partiamo con true
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // In un'app reale, qui verificheresti se c'è un token/sessione valida
-  // Per ora, lo lasciamo semplice. Mettiamo isLoading a false dopo un po'.
-  // TODO: Implementare il controllo della sessione al caricamento dell'app
-  useState(() => {
-    setTimeout(() => setIsLoading(false), 500); // Simula il controllo
-  });
+  // Funzione per caricare i dati dell'utente usando un token
+  const loadUserFromToken = useCallback(async (storedToken: string) => {
+    try {
+      // Usa il token per chiedere al backend "chi sono?"
+      const userData = await api.getMe(storedToken);
+      setUser(userData);
+      setToken(storedToken);
+    } catch (error) {
+      console.error("Token non valido o scaduto. Effettuare il logout.", error);
+      // Se il token non è più valido, pulisci tutto
+      logout();
+    }
+  }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
+  // Eseguito al primo caricamento per ripristinare la sessione
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    if (storedToken) {
+      loadUserFromToken(storedToken).finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+  }, [loadUserFromToken]);
+
+  const login = async (newToken: string) => {
+    localStorage.setItem('authToken', newToken);
+    await loadUserFromToken(newToken); // Carica i dati dell'utente dopo aver ricevuto il token
   };
 
   const logout = () => {
     setUser(null);
-    // TODO: Qui dovresti anche invalidare il token sul server
+    setToken(null);
+    localStorage.removeItem('authToken');
   };
 
-  const value = { user, login, logout, isLoading };
+  const value = { user, token, isLoading, login, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Creiamo un custom hook per usare facilmente il contesto
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

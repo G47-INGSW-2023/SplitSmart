@@ -6,6 +6,17 @@ export interface User {
   // ... non includere mai passwordHash nel frontend!
 }
 
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface UserRegisterData {
+  nome: string;
+  email: string;
+  password: string;
+}
+
 // Basato sulla classe Gruppo
 export interface Group {
   idGruppo: string;
@@ -22,9 +33,4 @@ export interface Expense {
   importoTotale: number; // Usa number per i calcoli
   pagatore: User;
   // ...
-}
-
-export interface UserLogin {
-  email: string;
-  password: string;
 }

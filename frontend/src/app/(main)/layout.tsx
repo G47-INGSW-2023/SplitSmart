@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link'; 
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -35,13 +36,25 @@ export default function MainLayout({
         {/* Sidebar (la creeremo dopo) */}
         <aside className="w-64 p-4 bg-gray-800 text-white">
           <h2 className="text-xl font-bold">Smart Split</h2>
-          <nav className="mt-8">
-            <ul>
-              <li className="p-2 rounded hover:bg-gray-700">Dashboard</li>
-              <li className="p-2 rounded hover:bg-gray-700">Gruppi</li>
-              <li className="p-2 rounded hover:bg-gray-700">Profilo</li>
-            </ul>
-          </nav>
+         <nav className="mt-8">
+          <ul className="space-y-2">
+            <li>
+              <Link href="/dashboard" className="block p-2 rounded hover:bg-gray-700">
+                Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/groups" className="block p-2 rounded hover:bg-gray-700">
+                Gruppi
+              </Link>
+            </li>
+            <li>
+              <Link href="/profile" className="block p-2 rounded hover:bg-gray-700">
+                Profilo
+              </Link>
+            </li>
+          </ul>
+        </nav>
           <div className="mt-auto absolute bottom-4">
              <button onClick={() => {
                 logout();

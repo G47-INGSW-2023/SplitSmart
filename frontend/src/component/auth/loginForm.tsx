@@ -23,15 +23,20 @@ export const LoginForm = () => {
     setError(null);
 
     try {
-        const userData = await api.login(email, password);
-        login(userData);
-        router.push('/dashboard');
-        } catch (err) {
-        setError(err instanceof Error ? err.message : 'Si è verificato un errore');
-        } finally {
-        setIsLoading(false);
-        }
+      // La chiamata `api.login` ora restituisce { token: "..." }
+      const { token } = await api.login({ email, password });
+      
+      // Passa il token al context, che si occuperà del resto
+      await login(token); 
+      
+      router.push('/dashboard');
+      } catch (err) {
+      setError(err instanceof Error ? err.message : 'Si è verificato un errore');
+      } finally {
+      setIsLoading(false);
+      }
     };
+
 
   return (
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
