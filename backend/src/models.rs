@@ -12,26 +12,25 @@ use rocket_okapi::request::OpenApiFromRequest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[diesel(table_name = balances)]
-#[diesel(check_for_backend(Sqlite))]
-pub struct Balance {
-    pub id: Option<i32>,
-    pub debtor_user_id: i32,
-    pub creditor_user_id: i32,
-    pub amount: f64,
-    pub group_id: Option<i32>,
-}
+//#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+//#[diesel(table_name = balances)]
+//#[diesel(check_for_backend(Sqlite))]
+//pub struct Balance {
+//    pub id: Option<i32>,
+//    pub debtor_user_id: i32,
+//    pub creditor_user_id: i32,
+//    pub amount: f64,
+//    pub group_id: Option<i32>,
+//}
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[diesel(table_name = expense_participations)]
-#[primary_key(expense_id, user_id)]
+#[diesel(primary_key(expense_id, user_id))]
 #[diesel(check_for_backend(Sqlite))]
 pub struct ExpenseParticipation {
     pub expense_id: i32,
     pub user_id: i32,
     pub amount_due: Option<f64>,
-    pub percentage_due: Option<f64>,
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -41,18 +40,13 @@ pub struct Expense {
     pub id: Option<i32>,
     pub desc: String,
     pub total_amount: f64,
-    pub expense_date: NaiveDateTime,
-    pub registration_date: NaiveDateTime,
-    pub user_id: i32,
+    pub creation_date: NaiveDateTime,
+    pub paid_by: i32,
     pub group_id: Option<i32>,
-    pub division_type: Option<String>,
-    pub division_participants: Option<String>,
-    pub personal_beneficiary_user_id: Option<i32>,
-    pub attachments: Option<String>,
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[primary_key(group_id, user_id)]
+#[diesel(primary_key(group_id, user_id))]
 #[diesel(table_name = group_administrators)]
 #[diesel(check_for_backend(Sqlite))]
 pub struct GroupAdministrator {
@@ -74,7 +68,7 @@ pub struct GroupInvite {
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[primary_key(group_id, user_id)]
+#[diesel(primary_key(group_id, user_id))]
 #[diesel(table_name = group_members)]
 #[diesel(check_for_backend(Sqlite))]
 pub struct GroupMember {
@@ -93,7 +87,7 @@ pub struct Group {
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[primary_key(user_id)]
+#[diesel(primary_key(user_id))]
 #[diesel(table_name = notification_preferences)]
 #[diesel(check_for_backend(Sqlite))]
 pub struct NotificationPreference {

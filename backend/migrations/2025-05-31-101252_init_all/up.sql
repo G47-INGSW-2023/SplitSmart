@@ -43,15 +43,10 @@ CREATE TABLE expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     desc TEXT NOT NULL,
     total_amount DECIMAL NOT NULL,
-    expense_date TIMESTAMP NOT NULL,
-    registration_date TIMESTAMP NOT NULL,
-    user_id INTEGER NOT NULL,
+    creation_date TIMESTAMP NOT NULL,
+    paid_by INTEGER NOT NULL,
     group_id INTEGER,
-    division_type TEXT CHECK (division_type IN ('EQUAL_SHARES', 'PERCENTAGES', 'FIXED_SHARES', 'PERSONAL')),
-    division_participants TEXT,
-    personal_beneficiary_user_id INTEGER,
-    attachments TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (paid_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
@@ -59,22 +54,21 @@ CREATE TABLE expense_participations (
     expense_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     amount_due DECIMAL,
-    percentage_due DECIMAL,
     PRIMARY KEY (expense_id, user_id),
     FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE balances (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    debtor_user_id INTEGER NOT NULL,
-    creditor_user_id INTEGER NOT NULL,
-    amount DECIMAL NOT NULL,
-    group_id INTEGER,
-    FOREIGN KEY (debtor_user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (creditor_user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
-);
+-- CREATE TABLE balances (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+--     debtor_user_id INTEGER NOT NULL,
+--     creditor_user_id INTEGER NOT NULL,
+--     amount DECIMAL NOT NULL,
+--     group_id INTEGER,
+--     FOREIGN KEY (debtor_user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     FOREIGN KEY (creditor_user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+-- );
 
 CREATE TABLE notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
