@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     username TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE groups (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     group_name TEXT NOT NULL,
     desc TEXT,
     creation_date TIMESTAMP NOT NULL
@@ -40,7 +40,7 @@ CREATE TABLE group_members (
 );
 
 CREATE TABLE expenses (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     desc TEXT NOT NULL,
     total_amount DECIMAL NOT NULL,
     expense_date TIMESTAMP NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE expense_participations (
 );
 
 CREATE TABLE balances (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     debtor_user_id INTEGER NOT NULL,
     creditor_user_id INTEGER NOT NULL,
     amount DECIMAL NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE balances (
 );
 
 CREATE TABLE notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
     recipient_user_id INTEGER NOT NULL,
     notification_type TEXT CHECK (notification_type IN ('GROUP_INVITE', 'NEW_EXPENSE', 'EXPENSE_MODIFIED', 'BALANCE_REQUESTED', 'PAYMENT_RECEIVED', 'MEMBER_ADDED', 'MEMBER_REMOVED', 'ADMIN_CHANGED')),
     message TEXT NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE notifications (
 );
 
 CREATE TABLE group_invites (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     group_id INTEGER NOT NULL,
     invited_user_id INTEGER NOT NULL,
     inviting_user_id INTEGER NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE group_invites (
 );
 
 CREATE TABLE notification_preferences (
-    user_id INTEGER PRIMARY KEY,
+    user_id INTEGER PRIMARY KEY NOT NULL,
     notify_new_group_expense BOOLEAN NOT NULL DEFAULT TRUE,
     notify_group_expense_modified BOOLEAN NOT NULL DEFAULT TRUE,
     notify_group_invite BOOLEAN NOT NULL DEFAULT TRUE,

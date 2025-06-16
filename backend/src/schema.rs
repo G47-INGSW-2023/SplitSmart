@@ -2,7 +2,7 @@
 
 diesel::table! {
     balances (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         debtor_user_id -> Integer,
         creditor_user_id -> Integer,
         amount -> Double,
@@ -21,7 +21,7 @@ diesel::table! {
 
 diesel::table! {
     expenses (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         desc -> Text,
         total_amount -> Double,
         expense_date -> Timestamp,
@@ -44,7 +44,7 @@ diesel::table! {
 
 diesel::table! {
     group_invites (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         group_id -> Integer,
         invited_user_id -> Integer,
         inviting_user_id -> Integer,
@@ -63,7 +63,7 @@ diesel::table! {
 
 diesel::table! {
     groups (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         group_name -> Text,
         desc -> Nullable<Text>,
         creation_date -> Timestamp,
@@ -72,7 +72,7 @@ diesel::table! {
 
 diesel::table! {
     notification_preferences (user_id) {
-        user_id -> Nullable<Integer>,
+        user_id -> Integer,
         notify_new_group_expense -> Bool,
         notify_group_expense_modified -> Bool,
         notify_group_invite -> Bool,
@@ -84,7 +84,7 @@ diesel::table! {
 
 diesel::table! {
     notifications (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         recipient_user_id -> Integer,
         notification_type -> Nullable<Text>,
         message -> Text,
@@ -96,7 +96,7 @@ diesel::table! {
 
 diesel::table! {
     users (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         username -> Text,
         email -> Text,
         password_hash -> Text,
