@@ -1,37 +1,21 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    balances (id) {
-        id -> Nullable<Integer>,
-        debtor_user_id -> Integer,
-        creditor_user_id -> Integer,
-        amount -> Double,
-        group_id -> Nullable<Integer>,
-    }
-}
-
-diesel::table! {
     expense_participations (expense_id, user_id) {
         expense_id -> Integer,
         user_id -> Integer,
         amount_due -> Nullable<Double>,
-        percentage_due -> Nullable<Double>,
     }
 }
 
 diesel::table! {
     expenses (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         desc -> Text,
         total_amount -> Double,
-        expense_date -> Timestamp,
-        registration_date -> Timestamp,
-        user_id -> Integer,
+        creation_date -> Timestamp,
+        paid_by -> Integer,
         group_id -> Nullable<Integer>,
-        division_type -> Nullable<Text>,
-        division_participants -> Nullable<Text>,
-        personal_beneficiary_user_id -> Nullable<Integer>,
-        attachments -> Nullable<Text>,
     }
 }
 
@@ -44,7 +28,7 @@ diesel::table! {
 
 diesel::table! {
     group_invites (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         group_id -> Integer,
         invited_user_id -> Integer,
         inviting_user_id -> Integer,
@@ -63,7 +47,7 @@ diesel::table! {
 
 diesel::table! {
     groups (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         group_name -> Text,
         desc -> Nullable<Text>,
         creation_date -> Timestamp,
@@ -72,7 +56,7 @@ diesel::table! {
 
 diesel::table! {
     notification_preferences (user_id) {
-        user_id -> Nullable<Integer>,
+        user_id -> Integer,
         notify_new_group_expense -> Bool,
         notify_group_expense_modified -> Bool,
         notify_group_invite -> Bool,
@@ -84,7 +68,7 @@ diesel::table! {
 
 diesel::table! {
     notifications (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         recipient_user_id -> Integer,
         notification_type -> Nullable<Text>,
         message -> Text,
@@ -96,7 +80,7 @@ diesel::table! {
 
 diesel::table! {
     users (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         username -> Text,
         email -> Text,
         password_hash -> Text,
@@ -114,11 +98,10 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(balances -> groups (group_id));
 diesel::joinable!(expense_participations -> expenses (expense_id));
 diesel::joinable!(expense_participations -> users (user_id));
 diesel::joinable!(expenses -> groups (group_id));
-diesel::joinable!(expenses -> users (user_id));
+diesel::joinable!(expenses -> users (paid_by));
 diesel::joinable!(group_administrators -> groups (group_id));
 diesel::joinable!(group_administrators -> users (user_id));
 diesel::joinable!(group_invites -> groups (group_id));
@@ -128,7 +111,6 @@ diesel::joinable!(notification_preferences -> users (user_id));
 diesel::joinable!(notifications -> users (recipient_user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    balances,
     expense_participations,
     expenses,
     group_administrators,

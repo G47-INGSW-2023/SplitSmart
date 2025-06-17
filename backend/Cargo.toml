@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 argon2 = "0.5.3"
 chrono = { version = "0.4.41", features = ["serde"] }
-diesel = { version = "2.2.10", features = ["chrono", "sqlite", "uuid"] }
+diesel = { version = "2.2.10", features = ["chrono", "returning_clauses_for_sqlite_3_35", "sqlite", "uuid"] }
 dotenvy = "0.15.7"
 rocket = { version = "0.5.1", features = ["json", "serde_json"] }
 rocket_cors = "0.6.0"
@@ -16,4 +16,5 @@ schemars = { version = "0.8.22", features = ["chrono"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio = "1.45.1"
+uuid = { version = "1.17.0", features = ["v4"] }
 

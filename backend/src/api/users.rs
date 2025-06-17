@@ -1,11 +1,11 @@
 use crate::{
     establish_connection,
-    models::{self, Group, User},
-    schema::group_members,
+    models::User,
+    SessionStore,
 };
-use chrono::{NaiveDateTime, Utc};
+use chrono::Utc;
 use diesel::{ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
-use rocket::{http::Status, serde::json::Json, State};
+use rocket::{http::Status, serde::json::Json, time::Duration};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
 };
@@ -14,6 +14,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2, PasswordHash, PasswordVerifier,
 };
+use uuid::Uuid;
 
 use crate::schema::users::dsl::*;
 
@@ -25,7 +26,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,register]
+    openapi_get_routes_spec![settings:login,logout,register]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -34,15 +35,17 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
 //+ attivaAccount(tokenAttivazione: String): boolean
 //+ richiediResetPassword(email: String): void
 //+ resetPassword(tokenResetPassword: String, nuovaPassword: String): boolean
-//+ logout(): void
+//| logout(): void
 //+ modificaProfilo(nuovoNome: String, nuovaEmail: String): boolean
 //+ cambiaPassword(passwordCorrente: String, nuovaPassword: String): boolean
 //+ aggiornaPreferenzeNotifiche(nuovePreferenze: PreferenzeNotifiche): void
 //+ impostaLingua(codiceLingua: String): void
-//+ creaGruppo(nomeGruppo: String, descrizioneGruppo: String): Gruppo
 //+ visualizzaDashboard(): void
 //+ visualizzaSaldiComplessivi(): void
 //+ visualizzaStoricoTransazioni(filtri: Object): void
+//
+// will not implement:
+//| creaGruppo(nomeGruppo: String, descrizioneGruppo: String): Gruppo
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct LoginRequest {
@@ -52,7 +55,11 @@ pub struct LoginRequest {
 
 #[openapi(tag = "User")]
 #[post("/login", data = "<login>")]
-fn login(cookies: &CookieJar<'_>, login: Json<LoginRequest>) -> Status {
+fn login(
+    jar: &CookieJar<'_>,
+    login: Json<LoginRequest>,
+    store: &rocket::State<SessionStore>,
+) -> Status {
     let mut conn = establish_connection();
 
     let user = match users
@@ -72,10 +79,33 @@ fn login(cookies: &CookieJar<'_>, login: Json<LoginRequest>) -> Status {
         .verify_password(login.password.as_bytes(), &parsed_hash)
         .is_ok()
     {
-        cookies.add(Cookie::new("user_id", format!("{:?}", user.id)));
+        let uuid = Uuid::new_v4();
+
+        let mut store = store.sessions.lock().unwrap();
+        store.insert(uuid.to_string(), user.id);
+        jar.add(
+            Cookie::build(("session_id", uuid.to_string()))
+                .same_site(rocket::http::SameSite::Strict)
+                .http_only(true)
+                .max_age(Duration::days(30)), //TODO .secure(true)
+        );
         Status::Ok
     } else {
         Status::Unauthorized
+    }
+}
+
+#[openapi(tag = "User")]
+#[post("/logout")]
+fn logout(jar: &CookieJar<'_>, store: &rocket::State<SessionStore>) -> Status {
+    match jar.get("session_id") {
+        Some(cookie) => {
+            let mut store = store.sessions.lock().unwrap();
+            store.remove(cookie.name());
+            jar.remove("session_id");
+            Status::Ok
+        }
+        None => Status::NotAcceptable,
     }
 }
 
@@ -124,7 +154,6 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
             }
         };
 
-    // Insert the new user into the database and retrieve the created record
     match diesel::insert_into(users)
         .values((
             username.eq(register_data.username.clone()),
