@@ -1,62 +1,61 @@
+// component/auth/loginForm.tsx
 'use client';
 
 import { useState } from 'react';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import Link from 'next/link';
-import { api } from '@/lib/api'; 
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
+import { Input } from '../ui/input'; // Assicurati che il percorso sia corretto
+import { Button } from '../ui/button'; // Assicurati che il percorso sia corretto
+import Link from 'next/link';
 
 export const LoginForm = () => {
-  const [email, setEmail] = useState('user@example.com'); // Precompilato per comodità
-  const [password, setPassword] = useState('password123'); // Precompilato per comodità
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  const { login } = useAuth(); 
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
+    setIsLoading(true);
 
     try {
-      // La chiamata `api.login` ora restituisce { token: "..." }
-      const { token } = await api.login({ email, password });
-      
-      // Passa il token al context, che si occuperà del resto
-      await login(token); 
-      
+      const userData = await api.login({ email, password });
+      login(userData);
       router.push('/dashboard');
-      } catch (err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Si è verificato un errore');
-      } finally {
+    } finally {
       setIsLoading(false);
-      }
-    };
-
+    }
+  };
 
   return (
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center text-gray-800">Accedi</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-                <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700"> Email </label>
-                <Input id="email" type="email" placeholder="tuamail@esempio.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="text-gray-400"/>
-            </div>  
-            <div>
-                <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700"> Password </label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="text-gray-400"/>
-            </div>
-            {error && <p className="text-sm text-center text-red-500">{error}</p>}
-            <Button type="submit" disabled={isLoading}> {isLoading ? 'Caricamento...' : 'Login'} </Button>
-        </form>
-        <p className="text-sm text-center text-gray-600">
-            Non hai un account?{' '}
-            <Link href="/register" className="font-medium text-blue-600 hover:underline"> Registrati </Link>
-        </p>
+      <h1 className="text-2xl font-bold text-center text-black">Accedi</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="text-gray-700">Email</label>
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} className="text-gray-400"/>
+        </div>
+        <div>
+          <label htmlFor="password" className="text-gray-700">Password</label>
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} className="text-gray-400"/>
+        </div>
+        {error && <p className="text-sm text-center text-red-500">{error}</p>}
+        <Button type="submit" disabled={isLoading} className="w-full">
+          {isLoading ? 'Accesso in corso...' : 'Accedi'}
+        </Button>
+      </form>
+      <p className="text-sm text-center text-black">
+        Non hai un account?{' '}
+        <Link href="/register" className="font-medium text-blue-600 hover:underline">
+          Registrati
+        </Link>
+      </p>
     </div>
   );
 };

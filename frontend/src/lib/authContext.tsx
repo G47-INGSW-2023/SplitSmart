@@ -1,14 +1,13 @@
+// lib/authContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { api } from './api';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User } from '@/types';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null; // Aggiungiamo il token
   isLoading: boolean;
-  login: (token: string) => Promise<void>; // Login ora accetta un token
+  login: (userData: User) => void;
   logout: () => void;
 }
 
@@ -16,58 +15,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Funzione per caricare i dati dell'utente usando un token
-  const loadUserFromToken = useCallback(async (storedToken: string) => {
-    try {
-      // Usa il token per chiedere al backend "chi sono?"
-      const userData = await api.getMe(storedToken);
-      setUser(userData);
-      setToken(storedToken);
-    } catch (error) {
-      console.error("Token non valido o scaduto. Effettuare il logout.", error);
-      // Se il token non è più valido, pulisci tutto
-      logout();
-    }
+  useEffect(() => {
+    // Per ora, non controlliamo lo stato al ricaricamento.
+    // L'utente dovrà fare il login ogni volta.
+    // Quando /users/me sarà pronto, qui andrà la logica per ripristinare la sessione.
+    setIsLoading(false);
   }, []);
 
-  // Eseguito al primo caricamento per ripristinare la sessione
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    if (storedToken) {
-      loadUserFromToken(storedToken).finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, [loadUserFromToken]);
-
-   const login = async (newToken: string) => {
-    try {
-      // Il context ora è responsabile di recuperare i dati dell'utente
-      const userData = await api.getMe(newToken); 
-      
-      // Se api.getMe ha successo, userData è un oggetto User valido
-      setUser(userData);
-      localStorage.setItem('authToken', newToken);
-
-    } catch (error) {
-      console.error("Errore durante il recupero dei dati utente dopo il login:", error);
-      // Se getMe fallisce, il login non è completo, quindi facciamo il logout
-      logout();
-      // Rilancia l'errore in modo che il form possa mostrarlo all'utente
-      throw error;
-    }
+  // Funzione semplice che riceve i dati utente (finti) e li imposta nello stato.
+  const login = (userData: User) => {
+    setUser(userData);
   };
 
   const logout = () => {
+    // Quando il backend avrà un endpoint /logout, andrà chiamato qui.
+    // es: await api.logout();
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('authToken');
   };
 
-  const value = { user, token, isLoading, login, logout };
+  const value = { user, isLoading, login, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -75,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth deve essere usato all\'interno di un AuthProvider');
   }
   return context;
 };

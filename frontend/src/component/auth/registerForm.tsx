@@ -1,22 +1,21 @@
+// component/auth/registerForm.tsx
 'use client';
 
 import { useState } from 'react';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import Link from 'next/link';
-import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+import { Input } from '../ui/input'; // Assicurati che il percorso sia corretto
+import { Button } from '../ui/button'; // Assicurati che il percorso sia corretto
+import Link from 'next/link';
 
 export const RegisterForm = () => {
-  const [username, setNome] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +23,6 @@ export const RegisterForm = () => {
     setError(null);
     setSuccess(null);
 
-    // Validazione front-end base
     if (password !== confirmPassword) {
       setError('Le password non coincidono.');
       return;
@@ -32,13 +30,11 @@ export const RegisterForm = () => {
 
     setIsLoading(true);
     try {
-       const response = await api.register({ username, email, password });
-        setSuccess(response.message || 'Registrazione completata! Controlla la tua email.');
-        
-        setTimeout(() => {
-            router.push('/login');
-        }, 3000);
-
+      await api.register({ username, email, password });
+      setSuccess('Registrazione avvenuta con successo! Verrai reindirizzato al login...');
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Si è verificato un errore');
     } finally {
@@ -48,77 +44,31 @@ export const RegisterForm = () => {
 
   return (
     <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold text-center text-gray-800">Crea un Account</h1>
+      <h1 className="text-2xl font-bold text-center text-black">Crea un Account</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-700">
-            Nome
-          </label>
-          <Input
-            id="name"
-            type="text"
-            placeholder="Mario Rossi"
-            value={username}
-            onChange={(e) => setNome(e.target.value)}
-            required
-            disabled={isLoading || !!success}
-            className="text-gray-400"
-          />
+          <label htmlFor="name" className="text-gray-700">Nome</label>
+          <Input id="name" type="text" value={username} onChange={(e) => setUsername(e.target.value)} required disabled={isLoading || !!success} className="text-gray-400"/>
         </div>
         <div>
-          <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="tuamail@esempio.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading || !!success}
-            className="text-gray-400"
-          />
+          <label htmlFor="email" className="text-gray-700">Email</label>
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading || !!success} className="text-gray-400"/>
         </div>
         <div>
-          <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="Minimo 8 caratteri"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading || !!success}
-            className="text-gray-400"
-          />
+          <label htmlFor="password" className="text-gray-700">Password</label>
+          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading || !!success} className="text-gray-400"/>
         </div>
         <div>
-          <label htmlFor="confirmPassword" className="block mb-2 text-sm font-medium text-gray-700">
-            Conferma Password
-          </label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            disabled={isLoading || !!success}
-            className="text-gray-400"
-          />
+          <label htmlFor="confirmPassword" className="text-gray-700">Conferma Password</label>
+          <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required disabled={isLoading || !!success} className="text-gray-400"/>
         </div>
-        
         {error && <p className="text-sm text-center text-red-500">{error}</p>}
         {success && <p className="text-sm text-center text-green-500">{success}</p>}
-        
-        <Button type="submit" disabled={isLoading || !!success}>
+        <Button type="submit" disabled={isLoading || !!success} className="w-full">
           {isLoading ? 'Registrazione in corso...' : 'Registrati'}
         </Button>
       </form>
-      <p className="text-sm text-center text-gray-600">
+      <p className="text-sm text-center text-black">
         Hai già un account?{' '}
         <Link href="/login" className="font-medium text-blue-600 hover:underline">
           Accedi
