@@ -105,30 +105,33 @@ fn create_group(new_group: Json<PutGroup>, user: User) -> Result<Json<Group>, St
     let mut conn = establish_connection();
 
     let res = conn.transaction::<Group, diesel::result::Error, _>(|conn| {
-        let group = diesel::insert_into(groups)
+        diesel::insert_into(groups)
             .values((
-                // id is not passed as it will be auto generated (hopefully)
                 group_name.eq(new_group.name.clone()),
                 desc.eq(new_group.description.clone()),
                 creation_date.eq(diesel::dsl::now),
             ))
-            .get_result::<Group>(conn)?;
+            .execute(conn)?;
+
+        let created_group = groups
+            .order(id.desc())
+            .first::<Group>(conn)?;
 
         {
             use crate::schema::group_administrators::dsl::*;
             diesel::insert_into(group_administrators)
-                .values((group_id.eq(group.id), user_id.eq(user.id)))
+                .values((group_id.eq(created_group.id), user_id.eq(user.id)))
                 .execute(conn)?;
         }
 
         {
             use crate::schema::group_members::dsl::*;
             diesel::insert_into(group_members)
-                .values((group_id.eq(group.id), user_id.eq(user.id)))
+                .values((group_id.eq(created_group.id), user_id.eq(user.id)))
                 .execute(conn)?;
         }
 
-        Ok(group)
+        Ok(created_group)
     });
 
     match res {

@@ -67,7 +67,7 @@ export const api = {
       console.error("Logout fallito sul backend, ma si procede con la pulizia del frontend.");
     }
   },
-  
+
   /**
    * Recupera la lista dei gruppi dell'utente.
    */
@@ -80,6 +80,18 @@ export const api = {
     return groups || [];
   },
 
+  getGroupById: async (groupId: number): Promise<Group> => {
+    // Il backend ha già questo endpoint: GET /groups/<gid>
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const group = await handleResponse<Group>(response);
+    if (!group) {
+      throw new Error(`Gruppo con ID ${groupId} non trovato.`);
+    }
+    return group;
+  },
   /**
    * Crea un nuovo gruppo.
    */
