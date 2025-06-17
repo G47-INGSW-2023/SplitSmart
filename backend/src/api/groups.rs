@@ -5,10 +5,7 @@ use crate::{
 };
 
 use diesel::{connection::Connection, SelectableHelper};
-use diesel::{
-    dsl::exists, select, ExpressionMethods, Insertable, QueryDsl,
-    RunQueryDsl,
-};
+use diesel::{dsl::exists, select, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
 use rocket::{http::Status, serde::json::Json};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
@@ -99,39 +96,37 @@ pub struct PutGroup {
 /// request, both as member and administrator
 ///
 /// if successful returns the newly created group
+
 #[openapi(tag = "Groups")]
 #[post("/", data = "<new_group>")]
 fn create_group(new_group: Json<PutGroup>, user: User) -> Result<Json<Group>, Status> {
     let mut conn = establish_connection();
 
     let res = conn.transaction::<Group, diesel::result::Error, _>(|conn| {
-        diesel::insert_into(groups)
+        let group = diesel::insert_into(groups)
             .values((
+                // id is not passed as it will be auto generated (hopefully)
                 group_name.eq(new_group.name.clone()),
                 desc.eq(new_group.description.clone()),
                 creation_date.eq(diesel::dsl::now),
             ))
-            .execute(conn)?;
-
-        let created_group = groups
-            .order(id.desc())
-            .first::<Group>(conn)?;
+            .get_result::<Group>(conn)?;
 
         {
             use crate::schema::group_administrators::dsl::*;
             diesel::insert_into(group_administrators)
-                .values((group_id.eq(created_group.id), user_id.eq(user.id)))
+                .values((group_id.eq(group.id), user_id.eq(user.id)))
                 .execute(conn)?;
         }
 
         {
             use crate::schema::group_members::dsl::*;
             diesel::insert_into(group_members)
-                .values((group_id.eq(created_group.id), user_id.eq(user.id)))
+                .values((group_id.eq(group.id), user_id.eq(user.id)))
                 .execute(conn)?;
         }
 
-        Ok(created_group)
+        Ok(group)
     });
 
     match res {
@@ -305,7 +300,6 @@ fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
 #[post("/<gid>/admins/<uid>")]
 fn promote_to_admin(gid: i32, uid: i32, user: User) -> Result<(), Status> {
     let mut conn = establish_connection();
-    
 
     // this ensures that the user that made the request is an admin
     is_admin(gid, user.id)?;
