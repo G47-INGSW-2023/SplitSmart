@@ -1,4 +1,3 @@
-use std::sync::Mutex;
 
 use crate::{establish_connection, schema::*, SessionStore};
 use chrono::NaiveDateTime;

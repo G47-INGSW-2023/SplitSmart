@@ -1,12 +1,11 @@
 use crate::{
     establish_connection,
-    models::{self, Group, User},
-    schema::group_members,
+    models::User,
     SessionStore,
 };
-use chrono::{NaiveDateTime, Utc};
+use chrono::Utc;
 use diesel::{ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
-use rocket::{futures::lock::Mutex, http::Status, serde::json::Json, time::Duration, State};
+use rocket::{http::Status, serde::json::Json, time::Duration};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
 };

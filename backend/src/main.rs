@@ -2,15 +2,11 @@
 extern crate rocket;
 
 use diesel::prelude::*;
-use rocket::serde::json::Json;
-use rocket::{http::Status, State};
-use rocket_cors::{AllowedOrigins, CorsOptions};
+use rocket_cors::CorsOptions;
 use rocket_okapi::okapi::openapi3::OpenApi;
-use rocket_okapi::settings::UrlObject;
 use rocket_okapi::{mount_endpoints_and_merged_docs, swagger_ui::*};
-use rocket_sync_db_pools::database;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 mod api;
 mod models;

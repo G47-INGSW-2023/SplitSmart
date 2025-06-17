@@ -1,16 +1,15 @@
 use crate::{
     establish_connection,
-    models::{Group, GroupAdministrator, GroupMember, User},
-    schema::{expense_participations::user_id, group_administrators, group_members},
+    models::{Group, User},
+    schema::group_members,
 };
-use chrono::{NaiveDateTime, Utc};
 
-use diesel::{connection::Connection, query_dsl::methods::SelectDsl, SelectableHelper};
+use diesel::{connection::Connection, SelectableHelper};
 use diesel::{
-    dsl::exists, query_dsl::methods::FindDsl, select, ExpressionMethods, Insertable, QueryDsl,
+    dsl::exists, select, ExpressionMethods, Insertable, QueryDsl,
     RunQueryDsl,
 };
-use rocket::{http::Status, serde::json::Json, State};
+use rocket::{http::Status, serde::json::Json};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
 };
@@ -303,7 +302,7 @@ fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
 #[post("/<gid>/admins/<uid>")]
 fn promote_to_admin(gid: i32, uid: i32, user: User) -> Result<(), Status> {
     let mut conn = establish_connection();
-    use crate::schema::users::dsl::*;
+    
 
     // this ensures that the user that made the request is an admin
     is_admin(gid, user.id)?;
