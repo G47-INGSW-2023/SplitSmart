@@ -14,6 +14,7 @@ export const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Ora `login` si aspetta le credenziali
   const { login } = useAuth();
   const router = useRouter();
 
@@ -23,8 +24,8 @@ export const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const userData = await api.login({ email, password });
-      login(userData);
+      // Passa le credenziali al context. Il context farà il resto.
+      await login({ email, password });
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Si è verificato un errore');

@@ -1,41 +1,48 @@
-// lib/authContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { User } from '@/types';
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { api } from './api';
+import type { LoginCredentials } from '@/types';
 
 interface AuthContextType {
-  user: User | null;
+  isAuthenticated: boolean;
   isLoading: boolean;
-  login: (userData: User) => void;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Lo stato è un semplice booleano!
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Non più legato al caricamento iniziale
 
-  useEffect(() => {
-    // Per ora, non controlliamo lo stato al ricaricamento.
-    // L'utente dovrà fare il login ogni volta.
-    // Quando /users/me sarà pronto, qui andrà la logica per ripristinare la sessione.
-    setIsLoading(false);
-  }, []);
-
-  // Funzione semplice che riceve i dati utente (finti) e li imposta nello stato.
-  const login = (userData: User) => {
-    setUser(userData);
+  const login = async (credentials: LoginCredentials) => {
+    setIsLoading(true);
+    try {
+      await api.login(credentials);
+      // Se la chiamata ha successo, il cookie è impostato.
+      // L'utente è autenticato.
+      setIsAuthenticated(true);
+    } catch (error) {
+      setIsAuthenticated(false);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    // Quando il backend avrà un endpoint /logout, andrà chiamato qui.
-    // es: await api.logout();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch (error) {
+      console.error("Logout fallito sul backend, ma procedo.", error);
+    }
+    setIsAuthenticated(false);
   };
 
-  const value = { user, isLoading, login, logout };
+  const value = { isAuthenticated, isLoading, login, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

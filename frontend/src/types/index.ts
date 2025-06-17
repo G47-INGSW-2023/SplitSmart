@@ -1,10 +1,4 @@
-// Basato sulla classe Utente
-export interface User {
-  idUtente: string;
-  nome: string;
-  email: string;
-  // ... non includere mai passwordHash nel frontend!
-}
+// types/index.ts
 
 export interface LoginCredentials {
   email: string;
@@ -17,20 +11,24 @@ export interface UserRegisterData {
   password: string;
 }
 
-// Basato sulla classe Gruppo
-export interface Group {
-  idGruppo: string;
-  nomeGruppo: string;
-  descrizioneGruppo?: string;
-  membri: User[];
-  // ...
+// Corrisponde alla struct `User` in models.rs (solo i campi che ci servono)
+// Ho rimosso password_hash e altri campi sensibili
+export interface User {
+  id: number;
+  username: string;
+  email: string;
 }
 
-// Basato sulla classe Spesa
-export interface Expense {
-  idSpesa: string;
-  descrizione: string;
-  importoTotale: number; // Usa number per i calcoli
-  pagatore: User;
-  // ...
+// Corrisponde alla struct `Group` in models.rs
+export interface Group {
+  id: number;
+  group_name: string;
+  desc: string | null;
+  creation_date: string; // Le date arrivano come stringhe ISO
+}
+
+// Dati per creare un gruppo, corrispondono a `PutGroup`
+export interface CreateGroupData {
+  name: string; // Il backend si aspetta 'name'
+  description?: string;
 }
