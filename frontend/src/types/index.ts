@@ -17,6 +17,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 // Corrisponde alla struct `Group` in models.rs
@@ -31,4 +32,17 @@ export interface Group {
 export interface CreateGroupData {
   name: string; // Il backend si aspetta 'name'
   description?: string;
+}
+
+export interface Expense {
+  id: number;
+  desc: string;
+  total_amount: number;
+  paid_by: number; // ID dell'utente che ha pagato
+  creation_date: string;
+}
+
+// Per invitare un utente
+export interface InviteUserData {
+  email: string;
 }

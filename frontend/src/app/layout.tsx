@@ -20,8 +20,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it">
-      <body className={inter.className}>
-        {/* 2. Avvolgi l'applicazione con QueryProvider. 
+      <body className={`${inter.className} select-none cursor-default`}>
+            {/* 2. Avvolgi l'applicazione con QueryProvider. 
             Deve essere all'esterno di qualsiasi componente che usa useQuery/useMutation.
             Metterlo qui è la scelta più sicura. */}
         <QueryProvider>
