@@ -5,10 +5,7 @@ use crate::{
 };
 
 use diesel::{connection::Connection, SelectableHelper};
-use diesel::{
-    dsl::exists, select, ExpressionMethods, Insertable, QueryDsl,
-    RunQueryDsl,
-};
+use diesel::{dsl::exists, select, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
 use rocket::{http::Status, serde::json::Json};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
@@ -99,6 +96,7 @@ pub struct PutGroup {
 /// request, both as member and administrator
 ///
 /// if successful returns the newly created group
+
 #[openapi(tag = "Groups")]
 #[post("/", data = "<new_group>")]
 fn create_group(new_group: Json<PutGroup>, user: User) -> Result<Json<Group>, Status> {
@@ -302,7 +300,6 @@ fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
 #[post("/<gid>/admins/<uid>")]
 fn promote_to_admin(gid: i32, uid: i32, user: User) -> Result<(), Status> {
     let mut conn = establish_connection();
-    
 
     // this ensures that the user that made the request is an admin
     is_admin(gid, user.id)?;
