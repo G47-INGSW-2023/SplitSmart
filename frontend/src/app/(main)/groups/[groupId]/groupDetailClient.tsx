@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Group } from '@/types';
-import ExpensesTab from './expensesTab'; // Creeremo questo componente
-import MembersTab from './membersTab';   // E anche questo
+import ExpensesTab from './expensesTab';
+import MembersTab from './membersTab';   
+import { Button } from '@/component/ui/button';
+import DeleteGroupModal from './deleteGroupModal';
 
 type Tab = 'expenses' | 'members'; // Definiamo i tipi di tab possibili
 
@@ -16,6 +18,9 @@ interface GroupDetailClientProps {
 export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   // Stato per tenere traccia della tab attiva
   const [activeTab, setActiveTab] = useState<Tab>('expenses');
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const isCurrentUserAdmin = true; 
 
   const { data: group, isLoading, isError, error } = useQuery<Group>({
     queryKey: ['group', groupId],
@@ -28,12 +33,18 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* Intestazione del Gruppo */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">{group?.group_name}</h1>
-        <p className="text-gray-500 mt-1">{group?.desc || 'Nessuna descrizione per questo gruppo.'}</p>
+       {/* Intestazione con pulsante Impostazioni/Elimina */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">{group?.group_name}</h1>
+          <p className="text-gray-500 mt-1">{group?.desc || 'Nessuna descrizione per questo gruppo.'}</p>
+        </div>
+        {isCurrentUserAdmin && (
+          <div className="flex-shrink-0 ml-4">
+            <Button variant="destructive" onClick={() => setDeleteModalOpen(true)} className="w-auto"> Elimina </Button>
+          </div>
+        )}
       </div>
-
       {/* Selettore Tab */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-6" aria-label="Tabs">
@@ -65,6 +76,13 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         {activeTab === 'expenses' && <ExpensesTab groupId={groupId} />}
         {activeTab === 'members' && <MembersTab groupId={groupId} />}
       </div>
+
+       <DeleteGroupModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        groupId={groupId}
+        groupName={group?.group_name || ''}
+      />
     </div>
   );
 }

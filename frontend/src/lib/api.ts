@@ -114,6 +114,23 @@ export const api = {
   },
 
   /**
+   * Elimina un gruppo.
+   */
+  deleteGroup: async (groupId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    // Usiamo una gestione dell'errore semplice
+    if (!response.ok) {
+      // Se il backend risponde con un JSON di errore, proviamo a leggerlo
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile eliminare il gruppo.";
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
    * Recupera i membri di un gruppo.
    */
   getGroupMembers: async (groupId: number): Promise<User[]> => {
@@ -153,22 +170,21 @@ export const api = {
   /**
    * Invia un invito a un utente per unirsi a un gruppo.
    */
-  inviteUserToGroup: async (groupId: number, data: InviteUserData): Promise<void> => {
-    // Il backend ha questo endpoint: POST /groups/<gid>/members/invite
+   inviteUserToGroup: async (groupId: number, data: InviteUserData): Promise<void> => {
     const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members/invite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
       credentials: 'include',
     });
-    // Questa rotta restituisce 501 Not Implemented, quindi ci aspettiamo un errore.
-    // Per ora lo gestiamo, in futuro funzionerà.
-    if (!response.ok && response.status !== 501) {
+
+    if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.detail || errorData.message || `Errore nell'invio dell'invito`;
+      const errorMessage = errorData.detail || errorData.message || `Impossibile inviare l'invito.`;
       throw new Error(errorMessage);
     }
-    console.log(`[API] Invito inviato a ${data.email} per il gruppo ${groupId}`);
+
+    console.log(`[API] Invito inviato con successo a ${data.email} per il gruppo ${groupId}`);
   },
 
   /**

@@ -15,7 +15,6 @@ interface MembersTabProps {
 export default function MembersTab({ groupId }: MembersTabProps) {
   const [inviteEmail, setInviteEmail] = useState('');
   
-  // Stato per il modale: tiene traccia del membro selezionato
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
 
   const queryClient = useQueryClient();
@@ -27,44 +26,51 @@ export default function MembersTab({ groupId }: MembersTabProps) {
 
   const inviteMutation = useMutation({
     mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
+    
     onSuccess: () => {
-      alert('Invito inviato con successo!'); // In futuro, useremo un toast/notifica
+      alert('Invito inviato con successo!'); 
       setInviteEmail('');
-      // Potremmo voler invalidare la query dei membri se l'invito li aggiunge subito
-      // queryClient.invalidateQueries({ queryKey: ['members', groupId] });
     },
+    
     onError: (error) => {
-      alert(`Errore: ${error.message}`);
+      alert(`Errore nell'invio dell'invito: ${error.message}`);
     }
   });
 
   const handleInviteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail) return;
-    inviteMutation.mutate(inviteEmail);
+    if (!inviteEmail.trim()) return;
+    inviteMutation.mutate(inviteEmail.trim());
   };
+
 
   if (isLoading) return <div>Caricamento membri...</div>;
   if (isError) return <div>Errore nel caricamento dei membri.</div>;
 
   return (
     <div className="space-y-8">
+      {/* Sezione Invito */}
       <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
-        <form onSubmit={handleInviteSubmit} className="flex gap-2">
+        <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
           <Input 
             type="email" 
             placeholder="email@esempio.com" 
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             required
-            className="w-full text-gray-500"
+            className="w-full text-gray-500" 
+            disabled={inviteMutation.isPending}
           />
-          <Button type="submit" disabled={inviteMutation.isPending}>
-            {inviteMutation.isPending ? 'Invio...' : 'Invita'}
+          <Button 
+            type="submit" 
+            disabled={inviteMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            {inviteMutation.isPending ? 'Invio in corso...' : 'Invia Invito'}
           </Button>
         </form>
-        {inviteMutation.isError && <p className="text-red-500 text-sm mt-1">{inviteMutation.error.message}</p>}
+        {/* Potremmo mostrare un errore direttamente sotto il form, ma l'alert è sufficiente per ora */}
       </div>
 
       <div>
