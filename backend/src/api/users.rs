@@ -59,7 +59,7 @@ pub struct UserInfo {
 
 #[openapi(tag = "User")]
 #[get("/<uid>")]
-fn user_info(uid: i32) -> Result<Json<UserInfo>, Status> {
+fn user_info(uid: i32, _user: User) -> Result<Json<UserInfo>, Status> {
     let mut conn = establish_connection();
 
     match users
