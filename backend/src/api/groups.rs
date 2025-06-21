@@ -1,10 +1,12 @@
 use crate::{
     establish_connection,
-    models::{Expense, ExpenseParticipation, Group, GroupInvite, User},
-    schema::{expense_participations, expenses, group_invites, group_members},
+    models::{Expense, ExpenseParticipation, Group, GroupInvite, GroupMember, User},
+    schema::{
+        expense_participations, expenses, group_administrators, group_invites, group_members,
+    },
 };
 
-use diesel::{connection::Connection, SelectableHelper};
+use diesel::{connection::Connection, result::Error::NotFound, SelectableHelper};
 use diesel::{dsl::exists, select, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
 use rocket::{http::Status, serde::json::Json};
 use rocket_okapi::{
@@ -17,7 +19,7 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,view_members,view_admins]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -330,6 +332,26 @@ fn add_member(gid: i32, p_user: Json<PutUser>, user: User) -> Result<(), Status>
     }
 }
 
+/// list of the members of the group
+#[openapi(tag = "Groups")]
+#[get("/<gid>/members")]
+fn view_members(gid: i32, user: User) -> Result<Json<Vec<GroupMember>>, Status> {
+    let mut conn = establish_connection();
+
+    is_member(gid, user.id)?;
+
+    match group_members::table
+        .filter(group_members::group_id.eq(gid))
+        .get_results::<GroupMember>(&mut conn)
+    {
+        Ok(g) => Ok(Json(g)),
+        Err(NotFound) => Err(Status::NotFound),
+        Err(e) => {
+            error!("error running view_members query: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct InviteUser {
     email: String,
@@ -369,8 +391,10 @@ fn invite_user(
         .get_result::<GroupInvite>(&mut conn)
     {
         Ok(gi) => Ok(Json(gi)),
-        Err(e) => {            error!("error running create_group transaction: {:?}", e);
-Err(Status::InternalServerError)},
+        Err(e) => {
+            error!("error running create_group transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
     }
 }
 
@@ -442,5 +466,26 @@ fn demote_admin(gid: i32, uid: i32, user: User) -> Result<(), Status> {
         Ok(deleted_rows) if deleted_rows > 0 => Ok(()), // Successfully deleted
         Ok(_) => Err(Status::NotFound),                 // User was not an admin
         Err(_) => Err(Status::InternalServerError),     // An error occurred
+    }
+}
+
+/// lists all the admins to the group with `gid`
+#[openapi(tag = "Groups")]
+#[get("/<gid>/admins")]
+fn view_admins(gid: i32, user: User) -> Result<Json<Vec<GroupMember>>, Status> {
+    let mut conn = establish_connection();
+
+    is_member(gid, user.id)?;
+
+    match group_administrators::table
+        .filter(group_administrators::group_id.eq(gid))
+        .get_results::<GroupMember>(&mut conn)
+    {
+        Ok(g) => Ok(Json(g)),
+        Err(NotFound) => Err(Status::NotFound),
+        Err(e) => {
+            error!("error running view_members query: {:?}", e);
+            Err(Status::InternalServerError)
+        }
     }
 }
