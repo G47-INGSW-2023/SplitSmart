@@ -219,9 +219,6 @@ fn delete_group(gid: i32, user: User) -> Result<Status, Status> {
 
 // ---------------------------- EXPENSES
 
-//| aggiungiSpesa(descrizione: String, importo: Decimal, pagatore: Utente, tipoDivisione: TipoDivisioneSpesa, dettagliDivisione: Object): Spesa
-
-/// adds a group expense, the division array specifies how the expense is divided
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutExpense {
     pub desc: String,
@@ -229,6 +226,8 @@ pub struct PutExpense {
     pub paid_by: i32,
     pub division: Vec<(i32, f64)>,
 }
+
+/// adds a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>
 #[openapi(tag = "Expenses")]
 #[post("/<gid>/expenses", data = "<new_expense>")]
 fn add_expense(
@@ -271,11 +270,15 @@ fn add_expense(
     }
 }
 
-// returns all the information about the group expenses, including the participations
 type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
+
+/// returns all the information about the group expenses, including the participations
 #[openapi(tag = "Expenses")]
 #[get("/<gid>/expenses")]
-fn get_expenses(gid: i32, user: User) -> Result<Json<ExpenseList>, Status> {
+fn get_expenses(
+    gid: i32,
+    user: User,
+) -> Result<Json<Vec<(Expense, Vec<ExpenseParticipation>)>>, Status> {
     let mut conn = establish_connection();
     // TODO: check user is member
 
