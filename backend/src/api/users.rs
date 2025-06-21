@@ -4,7 +4,7 @@ use crate::{
     schema::{group_invites, group_members},
     SessionStore,
 };
-use chrono::Utc;
+use chrono::{NaiveDateTime, Utc};
 use diesel::{result::Error::NotFound, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
 use rocket::{http::Status, serde::json::Json, time::Duration};
 use rocket_okapi::{
@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite]
+    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -47,6 +47,31 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
 //
 // will not implement (here):
 //| creaGruppo(nomeGruppo: String, descrizioneGruppo: String): Gruppo
+
+//#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Queryable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct UserInfo {
+    username: String,
+    email: String,
+    registration_date: NaiveDateTime,
+    last_login: Option<NaiveDateTime>,
+}
+
+#[openapi(tag = "User")]
+#[get("/<uid>")]
+fn user_info(uid: i32) -> Result<Json<UserInfo>, Status> {
+    let mut conn = establish_connection();
+
+    match users
+        .filter(id.eq(uid))
+        .select((username, email, registration_date, last_login))
+        .first::<UserInfo>(&mut conn)
+    {
+        Ok(u) => Ok(Json(u)),
+        Err(NotFound) => Err(Status::NotFound),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct LoginRequest {
