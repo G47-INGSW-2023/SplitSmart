@@ -1,7 +1,7 @@
 use crate::{
     establish_connection,
-    models::{Group, GroupInvite, User},
-    schema::{group_invites, group_members},
+    models::{Expense, Group, GroupInvite, User},
+    schema::{expense_participations, expenses, group_invites, group_members},
 };
 
 use diesel::{connection::Connection, SelectableHelper};
@@ -17,7 +17,7 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -221,17 +221,55 @@ fn delete_group(gid: i32, user: User) -> Result<Status, Status> {
 
 //| aggiungiSpesa(descrizione: String, importo: Decimal, pagatore: Utente, tipoDivisione: TipoDivisioneSpesa, dettagliDivisione: Object): Spesa
 
+/// adds a group expense, the division array specifies how the expense is divided
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutExpense {
     pub desc: String,
     pub total_amount: f64,
     pub paid_by: i32,
-    pub division_type: (),
+    pub division: Vec<(i32, f64)>,
 }
-//#[openapi(tag = "Groups")]
-//#[post("/<gid>/expense", data = "<new_expense>")]
-//fn add_expense(gid: i32, new_expense: Json<PutExpense>, user: User) -> Result<Json<Group>, Status> {
-//}
+#[openapi(tag = "Groups")]
+#[post("/<gid>/expenses", data = "<new_expense>")]
+fn add_expense(
+    gid: i32,
+    new_expense: Json<PutExpense>,
+    user: User,
+) -> Result<Json<Expense>, Status> {
+    let mut conn = establish_connection();
+
+    // TODO: check that the division array sum equals the total
+    match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
+        let expense = (
+            expenses::desc.eq(new_expense.desc.clone()),
+            expenses::total_amount.eq(new_expense.total_amount),
+            expenses::paid_by.eq(user.id),
+            expenses::creation_date.eq(diesel::dsl::now),
+            expenses::group_id.eq(gid),
+        )
+            .insert_into(expenses::table)
+            .get_result::<Expense>(conn)?;
+
+        for (d, a) in new_expense.division.iter() {
+            // TODO: check that user is in group
+            (
+                expense_participations::expense_id.eq(expense.id),
+                expense_participations::user_id.eq(d),
+                expense_participations::amount_due.eq(a),
+            )
+                .insert_into(expense_participations::table)
+                .execute(conn)?;
+        }
+
+        Ok(expense)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running add_expense transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
 
 // ---------------------------- MEMBERS
 
