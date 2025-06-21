@@ -1,7 +1,7 @@
 use crate::{
     establish_connection,
-    models::{Group, User},
-    schema::group_members,
+    models::{Expense, ExpenseParticipation, Group, GroupInvite, User},
+    schema::{expense_participations, expenses, group_invites, group_members},
 };
 
 use diesel::{connection::Connection, SelectableHelper};
@@ -17,17 +17,12 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_member,remove_member,promote_to_admin,demote_admin]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutUser {
     user_id: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct InviteUser {
-    email: String,
 }
 
 fn is_member(gid: i32, usrid: i32) -> Result<(), Status> {
@@ -224,19 +219,89 @@ fn delete_group(gid: i32, user: User) -> Result<Status, Status> {
 
 // ---------------------------- EXPENSES
 
-//| aggiungiSpesa(descrizione: String, importo: Decimal, pagatore: Utente, tipoDivisione: TipoDivisioneSpesa, dettagliDivisione: Object): Spesa
-
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutExpense {
     pub desc: String,
     pub total_amount: f64,
     pub paid_by: i32,
-    pub division_type: (),
+    pub division: Vec<(i32, f64)>,
 }
-//#[openapi(tag = "Groups")]
-//#[post("/<gid>/expense", data = "<new_expense>")]
-//fn add_expense(gid: i32, new_expense: Json<PutExpense>, user: User) -> Result<Json<Group>, Status> {
-//}
+
+/// adds a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>
+#[openapi(tag = "Expenses")]
+#[post("/<gid>/expenses", data = "<new_expense>")]
+fn add_expense(
+    gid: i32,
+    new_expense: Json<PutExpense>,
+    user: User,
+) -> Result<Json<Expense>, Status> {
+    let mut conn = establish_connection();
+
+    // TODO: check that the division array sum equals the total
+    match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
+        let expense = (
+            expenses::desc.eq(new_expense.desc.clone()),
+            expenses::total_amount.eq(new_expense.total_amount),
+            expenses::paid_by.eq(user.id),
+            expenses::creation_date.eq(diesel::dsl::now),
+            expenses::group_id.eq(gid),
+        )
+            .insert_into(expenses::table)
+            .get_result::<Expense>(conn)?;
+
+        for (d, a) in new_expense.division.iter() {
+            // TODO: check that user is in group
+            (
+                expense_participations::expense_id.eq(expense.id),
+                expense_participations::user_id.eq(d),
+                expense_participations::amount_due.eq(a),
+            )
+                .insert_into(expense_participations::table)
+                .execute(conn)?;
+        }
+
+        Ok(expense)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running add_expense transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
+
+/// returns all the information about the group expenses, including the participations
+#[openapi(tag = "Expenses")]
+#[get("/<gid>/expenses")]
+fn get_expenses(
+    gid: i32,
+    user: User,
+) -> Result<Json<Vec<(Expense, Vec<ExpenseParticipation>)>>, Status> {
+    let mut conn = establish_connection();
+    // TODO: check user is member
+
+    match conn.transaction::<ExpenseList, diesel::result::Error, _>(|conn| {
+        let expenses = expenses::table
+            .filter(expenses::group_id.eq(gid))
+            .get_results::<Expense>(conn)?;
+        let mut v: ExpenseList = Vec::new();
+        for e in expenses {
+            let participations = expense_participations::table
+                .filter(expense_participations::expense_id.eq(e.id))
+                .get_results::<ExpenseParticipation>(conn)?;
+            v.push((e, participations));
+        }
+        Ok(v)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running get_expenses transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
 
 // ---------------------------- MEMBERS
 
@@ -265,11 +330,46 @@ fn add_member(gid: i32, p_user: Json<PutUser>, user: User) -> Result<(), Status>
     }
 }
 
-// TODO
-#[openapi(tag = "Groups")]
-#[post("/<gid>/members/invite", data = "<user_to_invite>")]
-fn invite_member(gid: i32, user_to_invite: Json<InviteUser>) -> Status {
-    Status::NotImplemented
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct InviteUser {
+    email: String,
+    message: Option<String>,
+}
+
+/// invites a user to the group through mail address, executing user needs to be group admin
+#[openapi(tag = "Invite")]
+#[post("/<gid>/members/invite", data = "<invite>")]
+fn invite_user(
+    gid: i32,
+    invite: Json<InviteUser>,
+    user: User,
+) -> Result<Json<GroupInvite>, Status> {
+    use crate::schema::users;
+    let mut conn = establish_connection();
+
+    is_admin(gid, user.id)?;
+
+    let invited_id = match users::table
+        .filter(users::email.eq(&invite.email))
+        .first::<User>(&mut conn)
+    {
+        Ok(usr) => usr.id,
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
+    match (
+        group_invites::group_id.eq(gid),
+        group_invites::inviting_user_id.eq(user.id),
+        group_invites::invited_user_id.eq(invited_id),
+        group_invites::invite_status.eq("PENDING"),
+        group_invites::optional_message.eq(invite.message.clone()),
+    )
+        .insert_into(group_invites::table)
+        .get_result::<GroupInvite>(&mut conn)
+    {
+        Ok(gi) => Ok(Json(gi)),
+        Err(_) => Err(Status::InternalServerError),
+    }
 }
 
 /// removes a member from the group, can only be performed by admin

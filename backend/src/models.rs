@@ -1,4 +1,3 @@
-
 use crate::{establish_connection, schema::*, SessionStore};
 use chrono::NaiveDateTime;
 use diesel::{prelude::*, sqlite::Sqlite};
@@ -36,7 +35,7 @@ pub struct ExpenseParticipation {
 #[diesel(table_name = expenses)]
 #[diesel(check_for_backend(Sqlite))]
 pub struct Expense {
-    pub id: Option<i32>,
+    pub id: i32,
     pub desc: String,
     pub total_amount: f64,
     pub creation_date: NaiveDateTime,
