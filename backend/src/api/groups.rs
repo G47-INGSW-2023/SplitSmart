@@ -1,7 +1,7 @@
 use crate::{
     establish_connection,
-    models::{Group, User},
-    schema::group_members,
+    models::{Group, GroupInvite, User},
+    schema::{group_invites, group_members},
 };
 
 use diesel::{connection::Connection, SelectableHelper};
@@ -17,17 +17,12 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_member,remove_member,promote_to_admin,demote_admin]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutUser {
     user_id: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct InviteUser {
-    email: String,
 }
 
 fn is_member(gid: i32, usrid: i32) -> Result<(), Status> {
@@ -265,11 +260,46 @@ fn add_member(gid: i32, p_user: Json<PutUser>, user: User) -> Result<(), Status>
     }
 }
 
-// TODO
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct InviteUser {
+    email: String,
+    message: Option<String>,
+}
+
+/// invites a user to the group through mail address, executing user needs to be group admin
 #[openapi(tag = "Groups")]
-#[post("/<gid>/members/invite", data = "<user_to_invite>")]
-fn invite_member(gid: i32, user_to_invite: Json<InviteUser>) -> Status {
-    Status::NotImplemented
+#[post("/<gid>/members/invite", data = "<invite>")]
+fn invite_user(
+    gid: i32,
+    invite: Json<InviteUser>,
+    user: User,
+) -> Result<Json<GroupInvite>, Status> {
+    use crate::schema::users;
+    let mut conn = establish_connection();
+
+    is_admin(gid, user.id)?;
+
+    let invited_id = match users::table
+        .filter(users::email.eq(&invite.email))
+        .first::<User>(&mut conn)
+    {
+        Ok(usr) => usr.id,
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
+    match (
+        group_invites::group_id.eq(gid),
+        group_invites::inviting_user_id.eq(user.id),
+        group_invites::invited_user_id.eq(invited_id),
+        group_invites::invite_status.eq("PENDING"),
+        group_invites::optional_message.eq(invite.message.clone()),
+    )
+        .insert_into(group_invites::table)
+        .get_result::<GroupInvite>(&mut conn)
+    {
+        Ok(gi) => Ok(Json(gi)),
+        Err(_) => Err(Status::InternalServerError),
+    }
 }
 
 /// removes a member from the group, can only be performed by admin
