@@ -1,6 +1,6 @@
 use crate::{
     establish_connection,
-    models::{GroupInvite, GroupMember, User},
+    models::{GroupInvite, User},
     schema::{group_invites, group_members},
     SessionStore,
 };
