@@ -47,3 +47,13 @@ export interface InviteUserData {
   email: string;
   message?: string;
 }
+
+export interface GroupInvite {
+  id: number;
+  group_id: number;
+  invited_user_id: number;
+  inviting_user_id: number;
+  invite_date: string;
+  invite_status: "PENDING" | "ACCEPTED" | "REJECTED" | null;
+  optional_message: string | null;
+}

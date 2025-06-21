@@ -1,6 +1,6 @@
 // lib/api.ts
 
-import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, Expense } from '@/types';
+import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, Expense, GroupInvite } from '@/types';
 
 const API_PROXY_URL = '/api-proxy';
 /**
@@ -168,6 +168,49 @@ export const api = {
   },
 
   /**
+   * Promuove un utente a admin del gruppo.
+   */
+  promoteToAdmin: async (groupId: number, userId: number): Promise<void> => {
+    // Il backend ha questo endpoint: POST /groups/<gid>/admins/<uid>
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/admins/${userId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error("Impossibile promuovere l'utente ad admin.");
+    }
+    console.log(`[API] Utente ${userId} promosso ad admin nel gruppo ${groupId}`);
+  },
+
+  /**
+   * Rimuove un utente da un gruppo. Richiede privilegi di admin (gestiti dal backend).
+   */
+  removeMemberFromGroup: async (groupId: number, userId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile rimuovere il membro.";
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
+   * Recupera tutti gli inviti per l'utente corrente.
+   */
+  getInvites: async (): Promise<GroupInvite[]> => {
+    const response = await fetch(`${API_PROXY_URL}/user/invites`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const invites = await handleResponse<GroupInvite[]>(response);
+    return invites || [];
+  },
+
+  /**
    * Invia un invito a un utente per unirsi a un gruppo.
    */
    inviteUserToGroup: async (groupId: number, data: InviteUserData): Promise<void> => {
@@ -186,19 +229,34 @@ export const api = {
 
     console.log(`[API] Invito inviato con successo a ${data.email} per il gruppo ${groupId}`);
   },
-
+  
   /**
-   * Promuove un utente a admin del gruppo.
+   * Accetta un invito a un gruppo.
    */
-  promoteToAdmin: async (groupId: number, userId: number): Promise<void> => {
-    // Il backend ha questo endpoint: POST /groups/<gid>/admins/<uid>
-    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/admins/${userId}`, {
-      method: 'POST',
+  acceptInvite: async (inviteId: number): Promise<GroupInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/user/invites/${inviteId}/accept`, {
+      method: 'PUT', // Il backend usa PUT per aggiornare lo stato
       credentials: 'include',
     });
-    if (!response.ok) {
-      throw new Error("Impossibile promuovere l'utente ad admin.");
+    const updatedInvite = await handleResponse<GroupInvite>(response);
+    if (!updatedInvite) {
+      throw new Error("Il backend non ha restituito l'invito aggiornato.");
     }
-    console.log(`[API] Utente ${userId} promosso ad admin nel gruppo ${groupId}`);
+    return updatedInvite;
+  },
+
+  /**
+   * Rifiuta un invito a un gruppo.
+   */
+  rejectInvite: async (inviteId: number): Promise<GroupInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/user/invites/${inviteId}/reject`, {
+      method: 'PUT',
+      credentials: 'include',
+    });
+    const updatedInvite = await handleResponse<GroupInvite>(response);
+    if (!updatedInvite) {
+      throw new Error("Il backend non ha restituito l'invito aggiornato.");
+    }
+    return updatedInvite;
   },
 };

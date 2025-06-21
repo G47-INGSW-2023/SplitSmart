@@ -28,6 +28,20 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
     }
   });
 
+  const removeMutation = useMutation({
+    mutationFn: () => api.removeMemberFromGroup(groupId, member.id),
+    onSuccess: () => {
+      // Invalidiamo la cache dei membri per aggiornare la lista
+      queryClient.invalidateQueries({ queryKey: ['members', groupId] });
+      alert(`${member.username} è stato rimosso dal gruppo.`);
+      onClose();
+    },
+    onError: (error) => alert(`Errore: ${error.message}`),
+  });
+
+
+  const isCurrentUserAdmin = true;
+  
   return (
     <Modal isOpen={true} onClose={onClose} title={`Dettagli di ${member.username}`}>
       <div className="space-y-4">
@@ -41,15 +55,39 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
         </div>
 
         {/* Mostra il pulsante di promozione solo se l'utente non è già admin */}
-        {!member.isAdmin && (
-          <div className="pt-4 border-t">
-            <h4 className="font-semibold mb-2, text-gray-800">Azioni</h4>
+         {isCurrentUserAdmin && (
+          <div className="pt-4 border-t space-y-3">            
+            {/* Pulsante Promuovi (visibile solo se non è già admin) */}
+            {!member.isAdmin && (
+              <Button
+                onClick={() => promoteMutation.mutate()}
+                disabled={promoteMutation.isPending || removeMutation.isPending}
+                className="w-full"
+              >
+                {promoteMutation.isPending ? 'Promozione...' : 'Promuovi ad Admin'}
+              </Button>
+            )}
+
+            {/* Pulsante Rimuovi (visibile solo se non stiamo cercando di rimuovere noi stessi) */}
             <Button
-              onClick={() => promoteMutation.mutate()}
-              disabled={promoteMutation.isPending}
+              variant="destructive" // Usiamo la variante "pericolosa"
+              onClick={() => {
+                if (window.confirm(`Sei sicuro di voler rimuovere ${member.username} dal gruppo?`)) {
+                  removeMutation.mutate();
+                }
+              }}
+              disabled={promoteMutation.isPending || removeMutation.isPending}
+              className="w-full"
             >
-              {promoteMutation.isPending ? 'Promozione in corso...' : 'Promuovi ad Admin'}
+              {removeMutation.isPending ? 'Rimozione...' : 'Rimuovi dal Gruppo'}
             </Button>
+
+
+            {/* Messaggio se non si può rimuovere se stessi */}
+            {/*!canBeRemoved && (
+              <p className="text-xs text-gray-500 text-center">Non puoi rimuovere te stesso dal gruppo.</p>
+            )*/}
+
           </div>
         )}
 
