@@ -1,10 +1,11 @@
 use crate::{
     establish_connection,
-    models::User,
+    models::{GroupInvite, GroupMember, User},
+    schema::{group_invites, group_members},
     SessionStore,
 };
 use chrono::Utc;
-use diesel::{ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
+use diesel::{result::Error::NotFound, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
 use rocket::{http::Status, serde::json::Json, time::Duration};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
@@ -26,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,logout,register]
+    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -44,7 +45,7 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
 //+ visualizzaSaldiComplessivi(): void
 //+ visualizzaStoricoTransazioni(filtri: Object): void
 //
-// will not implement:
+// will not implement (here):
 //| creaGruppo(nomeGruppo: String, descrizioneGruppo: String): Gruppo
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -170,5 +171,79 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
             error!("could not add user to database when registering: {}", e);
             Status::InternalServerError
         }
+    }
+}
+
+// INVITES
+
+// view all invites, regardless of status, about the user making the request
+#[openapi(tag = "User")]
+#[get("/invites")]
+fn view_invites(user: User) -> Result<Json<Vec<GroupInvite>>, Status> {
+    let mut conn = establish_connection();
+
+    match group_invites::table
+        .filter(group_invites::invited_user_id.eq(user.id))
+        .get_results::<GroupInvite>(&mut conn)
+    {
+        Ok(v) => Ok(Json(v)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+// accept invite with given id, requires the user to be the one that received the invite
+#[openapi(tag = "User")]
+#[put("/invites/<invite_id>/accept")]
+fn accept_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status> {
+    let mut conn = establish_connection();
+
+    // try to update the single affected group invite and mark it as accepted
+    let invite = match diesel::update(
+        group_invites::table
+            // find the unique group_invite
+            .filter(group_invites::id.eq(invite_id))
+            // check that it's invite to the current user
+            .filter(group_invites::invited_user_id.eq(user.id)),
+    )
+    .set(group_invites::invite_status.eq("ACCEPTED"))
+    .get_result::<GroupInvite>(&mut conn)
+    {
+        Ok(v) => v,
+        Err(NotFound) => return Err(Status::NotFound),
+        Err(_) => return Err(Status::InternalServerError),
+    };
+
+    match (
+        group_members::group_id.eq(invite.group_id),
+        group_members::user_id.eq(user.id),
+    )
+        .insert_into(group_members::table)
+        .execute(&mut conn)
+    {
+        Ok(_) => Ok(Json(invite)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+// reject invite with given id, requires the user to be the one that received the invite
+#[openapi(tag = "User")]
+#[put("/invites/<invite_id>/reject")]
+fn reject_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status> {
+    let mut conn = establish_connection();
+
+    // try to update the single affected group invite and mark it as accepted
+    match diesel::update(
+        group_invites::table
+            // find the unique group_invite
+            .filter(group_invites::id.eq(invite_id))
+            // check that it's invite to the current user
+            .filter(group_invites::invited_user_id.eq(user.id)),
+    )
+    .set(group_invites::invite_status.eq("REJECTED"))
+    .get_result::<GroupInvite>(&mut conn)
+    {
+        Ok(v) => Ok(Json(v)),
+        Err(NotFound) => Err(Status::NotFound),
+        Err(_) => Err(Status::InternalServerError),
     }
 }
