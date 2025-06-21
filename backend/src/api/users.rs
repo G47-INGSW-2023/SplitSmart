@@ -54,13 +54,15 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+/// user can login here and the authentication is stored with a cookie, the api returns the `uid`
+/// that refers to the logged user, which can be useful in other api methods
 #[openapi(tag = "User")]
 #[post("/login", data = "<login>")]
 fn login(
     jar: &CookieJar<'_>,
     login: Json<LoginRequest>,
     store: &rocket::State<SessionStore>,
-) -> Status {
+) -> Result<Json<i32>, Status> {
     let mut conn = establish_connection();
 
     let user = match users
@@ -68,12 +70,18 @@ fn login(
         .first::<User>(&mut conn)
     {
         Ok(u) => u,
-        Err(_) => return Status::Unauthorized,
+        Err(e) => {
+            error!("error trying to find user by email during login: {:?}", e);
+            return Err(Status::Unauthorized);
+        }
     };
 
     let parsed_hash = match PasswordHash::new(&user.password_hash) {
         Ok(h) => h,
-        Err(_) => return Status::InternalServerError,
+        Err(e) => {
+            error!("error trying to hash user password during login: {:?}", e);
+            return Err(Status::InternalServerError);
+        }
     };
 
     if Argon2::default()
@@ -90,9 +98,10 @@ fn login(
                 .http_only(true)
                 .max_age(Duration::days(30)), //TODO .secure(true)
         );
-        Status::Ok
+        Ok(Json(user.id))
     } else {
-        Status::Unauthorized
+        error!("hashed user password does not match");
+        Err(Status::Unauthorized)
     }
 }
 
