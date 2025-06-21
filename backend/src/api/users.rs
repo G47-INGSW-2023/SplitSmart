@@ -210,7 +210,10 @@ fn accept_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status
     {
         Ok(v) => v,
         Err(NotFound) => return Err(Status::NotFound),
-        Err(_) => return Err(Status::InternalServerError),
+        Err(e) => {
+            error!("error trying to update group invite: {:?}", e);
+            return Err(Status::InternalServerError);
+        }
     };
 
     match (
@@ -221,7 +224,13 @@ fn accept_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status
         .execute(&mut conn)
     {
         Ok(_) => Ok(Json(invite)),
-        Err(_) => Err(Status::InternalServerError),
+        Err(e) => {
+            error!(
+                "error trying to update group members after accepting invite: {:?}",
+                e
+            );
+            Err(Status::InternalServerError)
+        }
     }
 }
 
