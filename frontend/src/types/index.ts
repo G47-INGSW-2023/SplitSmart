@@ -45,4 +45,5 @@ export interface Expense {
 // Per invitare un utente
 export interface InviteUserData {
   email: string;
+  message?: string;
 }

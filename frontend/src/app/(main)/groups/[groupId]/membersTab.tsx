@@ -25,7 +25,7 @@ export default function MembersTab({ groupId }: MembersTabProps) {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
+    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),     
     
     onSuccess: () => {
       alert('Invito inviato con successo!'); 
