@@ -363,12 +363,14 @@ fn invite_user(
         group_invites::invited_user_id.eq(invited_id),
         group_invites::invite_status.eq("PENDING"),
         group_invites::optional_message.eq(invite.message.clone()),
+        group_invites::invite_date.eq(diesel::dsl::now),
     )
         .insert_into(group_invites::table)
         .get_result::<GroupInvite>(&mut conn)
     {
         Ok(gi) => Ok(Json(gi)),
-        Err(_) => Err(Status::InternalServerError),
+        Err(e) => {            error!("error running create_group transaction: {:?}", e);
+Err(Status::InternalServerError)},
     }
 }
 

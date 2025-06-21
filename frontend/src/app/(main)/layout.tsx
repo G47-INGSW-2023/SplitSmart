@@ -1,64 +1,86 @@
 'use client';
 
-import Link from 'next/link'; 
 import { useAuth } from '@/lib/authContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Importa usePathname
 import { useEffect } from 'react';
+import Link from 'next/link';
 
-export default function MainLayout({ children }: { children: React.ReactNode; }) {
+// Definiamo i nostri link della sidebar in un array per renderli più facili da gestire
+const sidebarNavItems = [
+  {
+    title: "Gruppi",
+    href: "/groups",
+  },
+  {
+    title: "Notifiche",
+    href: "/notifications",
+  },
+  {
+    title: "Profilo",
+    href: "/profile",
+  },
+];
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname(); // Questo hook ci dà il percorso URL attuale
 
   useEffect(() => {
-    // Se non sta caricando e l'utente NON è autenticato, reindirizza
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);
-  
-  // Questa logica rimane per proteggere la rotta durante la navigazione
-  if (!isAuthenticated) {
-      // Puoi mostrare uno spinner o null mentre reindirizza
-      return <div>Caricamento...</div>;
+
+  if (isLoading || !isAuthenticated) {
+    return <div className="flex items-center justify-center min-h-screen">Caricamento...</div>;
   }
-  
+
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar (la creeremo dopo) */}
-      <aside className="w-64 p-4 bg-gray-800 text-white">
-        <h2 className="text-xl font-bold">Smart Split</h2>
-        <nav className="mt-8">
-        <ul className="space-y-2">
-          <li>
-            <Link href="/dashboard" className="block p-2 rounded hover:bg-gray-700">
-              Dashboard
-            </Link>
-          </li>
-          <li>
-            <Link href="/groups" className="block p-2 rounded hover:bg-gray-700">
-              Gruppi
-            </Link>
-          </li>
-          <li>
-            <Link href="/profile" className="block p-2 rounded hover:bg-gray-700">
-              Profilo
-            </Link>
-          </li>
-        </ul>
-      </nav>
-        <div className="mt-auto absolute bottom-4">
-            <button onClick={() => {
-              logout();
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-gray-800 text-white flex flex-col p-4">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-center">SmartSplit</h2>
+        </div>
+        <nav className="flex-grow">
+          <ul className="space-y-2">
+            {sidebarNavItems.map((item) => {
+              // Controlliamo se il percorso attuale inizia con l'href del link
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center p-3 rounded-lg transition-colors
+                      ${isActive
+                        ? 'bg-blue-600 text-white font-semibold' // Stile per il link attivo
+                        : 'hover:bg-gray-700' // Stile per il link inattivo
+                      }`}
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        {/* Pulsante di Logout */}
+        <div className="mt-auto">
+          <button
+            onClick={async () => {
+              await logout();
               router.push('/login');
-            }} className="w-full text-left p-2 rounded hover:bg-red-700">
-              Logout
+            }}
+            className="w-full flex items-center p-3 rounded-lg text-left hover:bg-red-700 transition-colors"
+          >
+            Logout
           </button>
         </div>
       </aside>
 
       {/* Contenuto principale */}
-      <main className="flex-1 p-8 bg-gray-100">{children}</main>
+      <main className="flex-1 p-8 overflow-y-auto">{children}</main>
     </div>
   );
 }
-

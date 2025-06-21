@@ -1,6 +1,6 @@
 // lib/api.ts
 
-import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData } from '@/types';
+import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, Expense, GroupInvite } from '@/types';
 
 const API_PROXY_URL = '/api-proxy';
 /**
@@ -80,6 +80,9 @@ export const api = {
     return groups || [];
   },
 
+  /**
+   * Recupera le informazioni di un gruppo dall'id.
+   */
   getGroupById: async (groupId: number): Promise<Group> => {
     // Il backend ha già questo endpoint: GET /groups/<gid>
     const response = await fetch(`${API_PROXY_URL}/groups/${groupId}`, {
@@ -92,6 +95,7 @@ export const api = {
     }
     return group;
   },
+
   /**
    * Crea un nuovo gruppo.
    */
@@ -107,5 +111,152 @@ export const api = {
       throw new Error("Il backend non ha restituito il gruppo creato.");
     }
     return newGroup;
+  },
+
+  /**
+   * Elimina un gruppo.
+   */
+  deleteGroup: async (groupId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    // Usiamo una gestione dell'errore semplice
+    if (!response.ok) {
+      // Se il backend risponde con un JSON di errore, proviamo a leggerlo
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile eliminare il gruppo.";
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
+   * Recupera i membri di un gruppo.
+   */
+  getGroupMembers: async (groupId: number): Promise<User[]> => {
+    console.log(`[API MOCK] Chiamata a getGroupMembers per il gruppo ${groupId}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Lista di membri finta
+    const members = [
+      { id: 1, username: 'Marco Rossi (Tu)', email: 'marco@example.com' },
+      { id: 2, username: 'Giulia Bianchi', email: 'giulia@example.com' },
+      { id: 3, username: 'Luca Verdi', email: 'luca@example.com' },
+    ];
+    
+    // Lista di ID admin finta (simuliamo che l'utente 1 sia admin)
+    const adminIds = [1]; 
+
+    // Aggiungiamo il flag `isAdmin` ai membri che sono anche admin
+    return members.map(member => ({
+      ...member,
+      isAdmin: adminIds.includes(member.id),
+    }));
+  },
+
+  /**
+   * Recupera le spese di un gruppo specifico.
+   */
+  getGroupExpenses: async (groupId: number): Promise<Expense[]> => {
+    // Anche questo endpoint andrebbe creato nel backend
+    console.log(`[API MOCK] Chiamata a getGroupExpenses per il gruppo ${groupId}`);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return [
+      { id: 101, desc: 'Pizza e birra', total_amount: 45.50, paid_by: 1, creation_date: new Date().toISOString() },
+      { id: 102, desc: 'Biglietti del cinema', total_amount: 27.00, paid_by: 2, creation_date: new Date().toISOString() },
+    ];
+  },
+
+  /**
+   * Promuove un utente a admin del gruppo.
+   */
+  promoteToAdmin: async (groupId: number, userId: number): Promise<void> => {
+    // Il backend ha questo endpoint: POST /groups/<gid>/admins/<uid>
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/admins/${userId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error("Impossibile promuovere l'utente ad admin.");
+    }
+    console.log(`[API] Utente ${userId} promosso ad admin nel gruppo ${groupId}`);
+  },
+
+  /**
+   * Rimuove un utente da un gruppo. Richiede privilegi di admin (gestiti dal backend).
+   */
+  removeMemberFromGroup: async (groupId: number, userId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile rimuovere il membro.";
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
+   * Recupera tutti gli inviti per l'utente corrente.
+   */
+  getInvites: async (): Promise<GroupInvite[]> => {
+    const response = await fetch(`${API_PROXY_URL}/user/invites`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const invites = await handleResponse<GroupInvite[]>(response);
+    return invites || [];
+  },
+
+  /**
+   * Invia un invito a un utente per unirsi a un gruppo.
+   */
+   inviteUserToGroup: async (groupId: number, data: InviteUserData): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members/invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || `Impossibile inviare l'invito.`;
+      throw new Error(errorMessage);
+    }
+
+    console.log(`[API] Invito inviato con successo a ${data.email} per il gruppo ${groupId}`);
+  },
+  
+  /**
+   * Accetta un invito a un gruppo.
+   */
+  acceptInvite: async (inviteId: number): Promise<GroupInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/user/invites/${inviteId}/accept`, {
+      method: 'PUT', // Il backend usa PUT per aggiornare lo stato
+      credentials: 'include',
+    });
+    const updatedInvite = await handleResponse<GroupInvite>(response);
+    if (!updatedInvite) {
+      throw new Error("Il backend non ha restituito l'invito aggiornato.");
+    }
+    return updatedInvite;
+  },
+
+  /**
+   * Rifiuta un invito a un gruppo.
+   */
+  rejectInvite: async (inviteId: number): Promise<GroupInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/user/invites/${inviteId}/reject`, {
+      method: 'PUT',
+      credentials: 'include',
+    });
+    const updatedInvite = await handleResponse<GroupInvite>(response);
+    if (!updatedInvite) {
+      throw new Error("Il backend non ha restituito l'invito aggiornato.");
+    }
+    return updatedInvite;
   },
 };

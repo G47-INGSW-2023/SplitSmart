@@ -26,7 +26,7 @@ export const LoginForm = () => {
     try {
       // Passa le credenziali al context. Il context farà il resto.
       await login({ email, password });
-      router.push('/dashboard');
+      router.push('/groups');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Si è verificato un errore');
     } finally {
