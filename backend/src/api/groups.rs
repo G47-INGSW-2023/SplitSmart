@@ -1,6 +1,6 @@
 use crate::{
     establish_connection,
-    models::{Expense, Group, GroupInvite, User},
+    models::{Expense, ExpenseParticipation, Group, GroupInvite, User},
     schema::{expense_participations, expenses, group_invites, group_members},
 };
 
@@ -17,7 +17,7 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -229,7 +229,7 @@ pub struct PutExpense {
     pub paid_by: i32,
     pub division: Vec<(i32, f64)>,
 }
-#[openapi(tag = "Groups")]
+#[openapi(tag = "Expenses")]
 #[post("/<gid>/expenses", data = "<new_expense>")]
 fn add_expense(
     gid: i32,
@@ -266,6 +266,35 @@ fn add_expense(
         Ok(e) => Ok(Json(e)),
         Err(e) => {
             error!("error running add_expense transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+// returns all the information about the group expenses, including the participations
+type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
+#[openapi(tag = "Expenses")]
+#[get("/<gid>/expenses")]
+fn get_expenses(gid: i32, user: User) -> Result<Json<ExpenseList>, Status> {
+    let mut conn = establish_connection();
+    // TODO: check user is member
+
+    match conn.transaction::<ExpenseList, diesel::result::Error, _>(|conn| {
+        let expenses = expenses::table
+            .filter(expenses::group_id.eq(gid))
+            .get_results::<Expense>(conn)?;
+        let mut v: ExpenseList = Vec::new();
+        for e in expenses {
+            let participations = expense_participations::table
+                .filter(expense_participations::expense_id.eq(e.id))
+                .get_results::<ExpenseParticipation>(conn)?;
+            v.push((e, participations));
+        }
+        Ok(v)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running get_expenses transaction: {:?}", e);
             Err(Status::InternalServerError)
         }
     }
