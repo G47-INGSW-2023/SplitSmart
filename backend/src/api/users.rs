@@ -176,8 +176,8 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
 
 // INVITES
 
-// view all invites, regardless of status, about the user making the request
-#[openapi(tag = "User")]
+/// view all invites, regardless of status, about the user making the request
+#[openapi(tag = "Invite")]
 #[get("/invites")]
 fn view_invites(user: User) -> Result<Json<Vec<GroupInvite>>, Status> {
     let mut conn = establish_connection();
@@ -191,8 +191,8 @@ fn view_invites(user: User) -> Result<Json<Vec<GroupInvite>>, Status> {
     }
 }
 
-// accept invite with given id, requires the user to be the one that received the invite
-#[openapi(tag = "User")]
+/// accept invite with given id, requires the user to be the one that received the invite
+#[openapi(tag = "Invite")]
 #[put("/invites/<invite_id>/accept")]
 fn accept_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status> {
     let mut conn = establish_connection();
@@ -225,8 +225,8 @@ fn accept_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status
     }
 }
 
-// reject invite with given id, requires the user to be the one that received the invite
-#[openapi(tag = "User")]
+/// reject invite with given id, requires the user to be the one that received the invite
+#[openapi(tag = "Invite")]
 #[put("/invites/<invite_id>/reject")]
 fn reject_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status> {
     let mut conn = establish_connection();

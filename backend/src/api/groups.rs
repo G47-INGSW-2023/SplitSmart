@@ -267,7 +267,7 @@ pub struct InviteUser {
 }
 
 /// invites a user to the group through mail address, executing user needs to be group admin
-#[openapi(tag = "Groups")]
+#[openapi(tag = "Invite")]
 #[post("/<gid>/members/invite", data = "<invite>")]
 fn invite_user(
     gid: i32,
