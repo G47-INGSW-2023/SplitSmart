@@ -17,7 +17,11 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  isAdmin?: boolean;
+}
+
+export interface GroupMember {
+  group_id: number;
+  user_id: number;
 }
 
 // Corrisponde alla struct `Group` in models.rs
@@ -56,4 +60,8 @@ export interface GroupInvite {
   invite_date: string;
   invite_status: "PENDING" | "ACCEPTED" | "REJECTED" | null;
   optional_message: string | null;
+}
+
+export interface MemberDetails extends User {
+  isAdmin: boolean;
 }

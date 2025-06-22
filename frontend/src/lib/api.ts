@@ -1,6 +1,6 @@
 // lib/api.ts
 
-import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, Expense, GroupInvite } from '@/types';
+import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, Expense, GroupInvite, GroupMember } from '@/types';
 
 const API_PROXY_URL = '/api-proxy';
 /**
@@ -23,18 +23,13 @@ export const api = {
   /**
    * Chiama l'endpoint di login. Si aspetta che il backend imposti un cookie in caso di successo.
    */
-   login: async (credentials: LoginCredentials): Promise<void> => {
-    const response = await fetch(`${API_PROXY_URL}/user/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-      credentials: 'include',
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.detail || errorData.message || 'Credenziali non valide';
-      throw new Error(errorMessage);
+   login: async (credentials: LoginCredentials): Promise<{ userId: number }> => {
+    const response = await fetch(`${API_PROXY_URL}/user/login`, { /*...*/ });
+    const userId = await handleResponse<number>(response);
+    if (userId === null || userId === undefined) {
+      throw new Error("Il backend non ha restituito l'ID utente dopo il login.");
     }
+    return { userId };
   },
 
   /**
@@ -131,27 +126,34 @@ export const api = {
   },
 
   /**
-   * Recupera i membri di un gruppo.
+   * Recupera gli ID dei membri di un gruppo.
    */
-  getGroupMembers: async (groupId: number): Promise<User[]> => {
-    console.log(`[API MOCK] Chiamata a getGroupMembers per il gruppo ${groupId}`);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Lista di membri finta
-    const members = [
-      { id: 1, username: 'Marco Rossi (Tu)', email: 'marco@example.com' },
-      { id: 2, username: 'Giulia Bianchi', email: 'giulia@example.com' },
-      { id: 3, username: 'Luca Verdi', email: 'luca@example.com' },
-    ];
-    
-    // Lista di ID admin finta (simuliamo che l'utente 1 sia admin)
-    const adminIds = [1]; 
+  getGroupMembers: async (groupId: number): Promise<GroupMember[]> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    return (await handleResponse<GroupMember[]>(response)) || [];
+  },
+  
+  /**
+   * Recupera gli ID degli admin di un gruppo.
+   */
+  getGroupAdmins: async (groupId: number): Promise<GroupMember[]> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/admins`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    return (await handleResponse<GroupMember[]>(response)) || [];
+  },
 
-    // Aggiungiamo il flag `isAdmin` ai membri che sono anche admin
-    return members.map(member => ({
-      ...member,
-      isAdmin: adminIds.includes(member.id),
-    }));
+  getUserDetails: async (userId: number, email: string): Promise<User> => {
+    console.log(`[MOCK] Simulazione dettagli per utente ID: ${userId}`);
+    return {
+      id: userId,
+      username: `Utente ${userId}`, // Nome generico
+      email: email,
+    };
   },
 
   /**

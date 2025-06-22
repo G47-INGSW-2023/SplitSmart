@@ -1,10 +1,11 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { api } from './api';
-import type { LoginCredentials } from '@/types';
+import type { User, LoginCredentials } from '@/types';
 
 interface AuthContextType {
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -15,34 +16,54 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Lo stato è un semplice booleano!
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Non più legato al caricamento iniziale
+  const [isLoading, setIsLoading] = useState(true); // Non più legato al caricamento iniziale
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
 
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     try {
-      await api.login(credentials);
-      // Se la chiamata ha successo, il cookie è impostato.
-      // L'utente è autenticato.
-      setIsAuthenticated(true);
+      const { userId } = await api.login(credentials);
+      
+      const authenticatedUser: User = {
+        id: userId,
+        email: credentials.email,
+        username: credentials.email,
+      };
+
+      setUser(authenticatedUser);
+
     } catch (error) {
-      setIsAuthenticated(false);
-      throw error;
+      setUser(null); 
+      throw error; 
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const logout = async () => {
+    setIsLoading(true);
     try {
       await api.logout();
     } catch (error) {
       console.error("Logout fallito sul backend, ma procedo.", error);
+    } finally {
+      setUser(null);
+      setIsLoading(false);
     }
-    setIsAuthenticated(false);
   };
 
-  const value = { isAuthenticated, isLoading, login, logout };
+  const value = { 
+    user, 
+    isAuthenticated: !!user, // Deriva direttamente dalla presenza dell'oggetto user
+    isLoading, 
+    login, 
+    logout 
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

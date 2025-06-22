@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { User } from '@/types';
+import { User, GroupMember, MemberDetails } from '@/types'; 
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { useState } from 'react';
@@ -15,14 +15,32 @@ interface MembersTabProps {
 export default function MembersTab({ groupId }: MembersTabProps) {
   const [inviteEmail, setInviteEmail] = useState('');
   
-  const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  const [selectedMember, setSelectedMember] = useState<MemberDetails | null>(null);
 
-  const queryClient = useQueryClient();
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['members-details', groupId],
+    queryFn: async (): Promise<MemberDetails[]> => {
+      const [membersResponse, adminsResponse] = await Promise.all([
+        api.getGroupMembers(groupId),
+        api.getGroupAdmins(groupId)
+      ]);
+      
+      const adminIds = new Set(adminsResponse.map(admin => admin.user_id));
 
-  const { data: members, isLoading, isError } = useQuery<User[]>({
-    queryKey: ['members', groupId],
-    queryFn: () => api.getGroupMembers(groupId),
+      const memberDetails: MemberDetails[] = await Promise.all(
+        membersResponse.map(async (member) => {
+          const userDetails = await api.getUserDetails(member.user_id, `user${member.user_id}@example.com`);
+          return {
+            ...userDetails,
+            isAdmin: adminIds.has(member.user_id),
+          };
+        })
+      );
+      
+      return memberDetails;
+    },
   });
+
 
   const inviteMutation = useMutation({
     mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),     
@@ -73,14 +91,15 @@ export default function MembersTab({ groupId }: MembersTabProps) {
         {/* Potremmo mostrare un errore direttamente sotto il form, ma l'alert è sufficiente per ora */}
       </div>
 
-      <div>
+       <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri del gruppo</h3>
         <ul className="space-y-2">
-          {members?.map(member => (
+          {data?.map(member => (
             <li key={member.id}>
               <button
                 onClick={() => setSelectedMember(member)}
-                className="w-full bg-white p-4 rounded-lg shadow-sm flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+                className="w-full bg-white p-4 rounded-lg shadow-sm flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <span className="font-medium text-gray-900">{member.username}</span>
                   <span className="text-sm text-gray-500">{member.email}</span>
@@ -97,7 +116,7 @@ export default function MembersTab({ groupId }: MembersTabProps) {
       </div>
 
       {/* Il modale di dettaglio membro. Viene mostrato solo se `selectedMember` non è null. */}
-      {selectedMember && (
+       {selectedMember && (
         <MemberDetailModal
           member={selectedMember}
           groupId={groupId}

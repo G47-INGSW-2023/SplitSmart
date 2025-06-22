@@ -3,17 +3,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { User } from '@/types';
+import { MemberDetails } from '@/types';
 import { Button } from '@/component/ui/button';
 import { Modal } from '@/component/ui/modal';
+import { useAuth } from '@/lib/authContext';
 
 interface MemberDetailModalProps {
-  member: User;
+  member: MemberDetails;
   groupId: number;
   onClose: () => void;
 }
 
 export default function MemberDetailModal({ member, groupId, onClose }: MemberDetailModalProps) {
   const queryClient = useQueryClient();
+
+  const { user: currentUser } = useAuth();
 
   const promoteMutation = useMutation({
     mutationFn: () => api.promoteToAdmin(groupId, member.id),
@@ -39,9 +43,10 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
     onError: (error) => alert(`Errore: ${error.message}`),
   });
 
-
   const isCurrentUserAdmin = true;
   
+  const canBeRemoved = currentUser?.id !== member.id;
+
   return (
     <Modal isOpen={true} onClose={onClose} title={`Dettagli di ${member.username}`}>
       <div className="space-y-4">
@@ -68,26 +73,26 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
               </Button>
             )}
 
-            {/* Pulsante Rimuovi (visibile solo se non stiamo cercando di rimuovere noi stessi) */}
-            <Button
-              variant="destructive" // Usiamo la variante "pericolosa"
-              onClick={() => {
-                if (window.confirm(`Sei sicuro di voler rimuovere ${member.username} dal gruppo?`)) {
-                  removeMutation.mutate();
-                }
-              }}
-              disabled={promoteMutation.isPending || removeMutation.isPending}
-              className="w-full"
-            >
-              {removeMutation.isPending ? 'Rimozione...' : 'Rimuovi dal Gruppo'}
-            </Button>
-
-
             {/* Messaggio se non si può rimuovere se stessi */}
-            {/*!canBeRemoved && (
-              <p className="text-xs text-gray-500 text-center">Non puoi rimuovere te stesso dal gruppo.</p>
-            )*/}
+           {canBeRemoved && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (window.confirm(`Sei sicuro di voler rimuovere ${member.username} dal gruppo?`)) {
+                    removeMutation.mutate();
+                  }
+                }}
+                disabled={promoteMutation.isPending || removeMutation.isPending}
+                className="w-full"
+              >
+                {removeMutation.isPending ? 'Rimozione...' : 'Rimuovi dal Gruppo'}
+              </Button>
+            )}
 
+            {/* Ora possiamo de-commentare e usare questa logica */}
+            {!canBeRemoved && (
+              <p className="text-xs text-gray-500 text-center">Non puoi rimuovere te stesso dal gruppo.</p>
+            )}
           </div>
         )}
 
