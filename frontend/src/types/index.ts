@@ -19,6 +19,13 @@ export interface User {
   email: string;
 }
 
+export interface UserInfo {
+    username: string;
+    email: string;
+    registration_date: string;
+    last_login: string | null;
+}
+
 export interface GroupMember {
   group_id: number;
   user_id: number;
@@ -42,8 +49,24 @@ export interface Expense {
   id: number;
   desc: string;
   total_amount: number;
-  paid_by: number; // ID dell'utente che ha pagato
   creation_date: string;
+  paid_by: number;
+  group_id: number | null;
+}
+
+export interface ExpenseParticipation {
+  expense_id: number;
+  user_id: number;
+  amount_due: number | null;
+}
+
+export type ExpenseWithParticipants = [Expense, ExpenseParticipation[]];
+
+export interface AddExpenseData {
+  desc: string;
+  total_amount: number;
+  paid_by: number;
+  division: [number, number][];
 }
 
 // Per invitare un utente

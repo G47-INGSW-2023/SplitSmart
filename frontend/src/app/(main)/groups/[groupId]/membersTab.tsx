@@ -10,44 +10,23 @@ import MemberDetailModal from './memberDetailModal'; // Importiamo il nuovo moda
 
 interface MembersTabProps {
   groupId: number;
+  initialMembers: MemberDetails[];
+  isCurrentUserAdmin: boolean;
 }
 
-export default function MembersTab({ groupId }: MembersTabProps) {
+
+export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin }: MembersTabProps) {
   const [inviteEmail, setInviteEmail] = useState('');
-  
   const [selectedMember, setSelectedMember] = useState<MemberDetails | null>(null);
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['members-details', groupId],
-    queryFn: async (): Promise<MemberDetails[]> => {
-      const [membersResponse, adminsResponse] = await Promise.all([
-        api.getGroupMembers(groupId),
-        api.getGroupAdmins(groupId)
-      ]);
-      
-      const adminIds = new Set(adminsResponse.map(admin => admin.user_id));
-
-      const memberDetails: MemberDetails[] = await Promise.all(
-        membersResponse.map(async (member) => {
-          const userDetails = await api.getUserDetails(member.user_id, `user${member.user_id}@example.com`);
-          return {
-            ...userDetails,
-            isAdmin: adminIds.has(member.user_id),
-          };
-        })
-      );
-      
-      return memberDetails;
-    },
-  });
-
+  const queryClient = useQueryClient();
 
   const inviteMutation = useMutation({
     mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),     
     
-    onSuccess: () => {
+onSuccess: () => {
       alert('Invito inviato con successo!'); 
       setInviteEmail('');
+      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
     },
     
     onError: (error) => {
@@ -61,40 +40,37 @@ export default function MembersTab({ groupId }: MembersTabProps) {
     inviteMutation.mutate(inviteEmail.trim());
   };
 
-
-  if (isLoading) return <div>Caricamento membri...</div>;
-  if (isError) return <div>Errore nel caricamento dei membri.</div>;
-
   return (
     <div className="space-y-8">
       {/* Sezione Invito */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
-        <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
-          <Input 
-            type="email" 
-            placeholder="email@esempio.com" 
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            required
-            className="w-full text-gray-500" 
-            disabled={inviteMutation.isPending}
-          />
-          <Button 
-            type="submit" 
-            disabled={inviteMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            {inviteMutation.isPending ? 'Invio in corso...' : 'Invia Invito'}
-          </Button>
-        </form>
-        {/* Potremmo mostrare un errore direttamente sotto il form, ma l'alert è sufficiente per ora */}
-      </div>
+      {isCurrentUserAdmin && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
+          <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
+            <Input 
+              type="email" 
+              placeholder="email@esempio.com" 
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+              className="w-full text-gray-500" 
+              disabled={inviteMutation.isPending}
+            />
+            <Button 
+              type="submit" 
+              disabled={inviteMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              {inviteMutation.isPending ? 'Invio...' : 'Invita'}
+            </Button>
+          </form>
+        </div>
+      )}
 
-       <div>
+      <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri del gruppo</h3>
         <ul className="space-y-2">
-          {data?.map(member => (
+          {initialMembers.map(member => (
             <li key={member.id}>
               <button
                 onClick={() => setSelectedMember(member)}
@@ -121,6 +97,7 @@ export default function MembersTab({ groupId }: MembersTabProps) {
           member={selectedMember}
           groupId={groupId}
           onClose={() => setSelectedMember(null)}
+          isCurrentUserAdmin={isCurrentUserAdmin} // Passiamo l'informazione al modale
         />
       )}
     </div>

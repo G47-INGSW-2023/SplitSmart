@@ -1,6 +1,4 @@
-// lib/api.ts
-
-import type { User, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, Expense, GroupInvite, GroupMember } from '@/types';
+import type { UserInfo, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, GroupInvite, GroupMember, ExpenseWithParticipants, Expense, AddExpenseData } from '@/types';
 
 const API_PROXY_URL = '/api-proxy';
 /**
@@ -23,12 +21,17 @@ export const api = {
   /**
    * Chiama l'endpoint di login. Si aspetta che il backend imposti un cookie in caso di successo.
    */
-   login: async (credentials: LoginCredentials): Promise<{ userId: number }> => {
-    const response = await fetch(`${API_PROXY_URL}/user/login`, { /*...*/ });
-    const userId = await handleResponse<number>(response);
-    if (userId === null || userId === undefined) {
-      throw new Error("Il backend non ha restituito l'ID utente dopo il login.");
+    login: async (credentials: LoginCredentials): Promise<{ userId: number }> => {
+    const response = await fetch(`${API_PROXY_URL}/user/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Credenziali non valide o errore del server.');
     }
+    const userId = await response.json();
     return { userId };
   },
 
@@ -147,26 +150,48 @@ export const api = {
     return (await handleResponse<GroupMember[]>(response)) || [];
   },
 
-  getUserDetails: async (userId: number, email: string): Promise<User> => {
-    console.log(`[MOCK] Simulazione dettagli per utente ID: ${userId}`);
-    return {
-      id: userId,
-      username: `Utente ${userId}`, // Nome generico
-      email: email,
-    };
+  /**
+   * Recupera i dettagli di un utente specifico usando il suo ID.
+   */
+  getUserDetails: async (userId: number): Promise<UserInfo> => {
+    const response = await fetch(`${API_PROXY_URL}/user/${userId}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const userInfo = await handleResponse<UserInfo>(response);
+    if (!userInfo) {
+      throw new Error("Impossibile recuperare i dettagli dell'utente.");
+    }
+    return userInfo;
   },
 
   /**
-   * Recupera le spese di un gruppo specifico.
+   * Recupera le spese di un gruppo
    */
-  getGroupExpenses: async (groupId: number): Promise<Expense[]> => {
-    // Anche questo endpoint andrebbe creato nel backend
-    console.log(`[API MOCK] Chiamata a getGroupExpenses per il gruppo ${groupId}`);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    return [
-      { id: 101, desc: 'Pizza e birra', total_amount: 45.50, paid_by: 1, creation_date: new Date().toISOString() },
-      { id: 102, desc: 'Biglietti del cinema', total_amount: 27.00, paid_by: 2, creation_date: new Date().toISOString() },
-    ];
+  getGroupExpenses: async (groupId: number): Promise<ExpenseWithParticipants[]> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/expenses`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const expenses = await handleResponse<ExpenseWithParticipants[]>(response);
+    return expenses || [];
+  },
+
+   /**
+   * Aggiunge una nuova spesa a un gruppo (REALE).
+   */
+  addExpense: async (groupId: number, data: AddExpenseData): Promise<Expense> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/expenses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    const newExpense = await handleResponse<Expense>(response);
+    if (!newExpense) {
+      throw new Error("Il backend non ha restituito la spesa creata.");
+    }
+    return newExpense;
   },
 
   /**
@@ -182,6 +207,22 @@ export const api = {
       throw new Error("Impossibile promuovere l'utente ad admin.");
     }
     console.log(`[API] Utente ${userId} promosso ad admin nel gruppo ${groupId}`);
+  },
+
+  /**
+   * Rimuove i privilegi di admin a un utente in un gruppo.
+   */
+  demoteAdmin: async (groupId: number, userId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/admins/${userId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile rimuovere i privilegi di admin.";
+      throw new Error(errorMessage);
+    }
   },
 
   /**

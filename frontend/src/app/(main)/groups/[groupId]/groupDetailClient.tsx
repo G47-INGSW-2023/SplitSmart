@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Group } from '@/types';
+import { useAuth } from '@/lib/authContext';
 import ExpensesTab from './expensesTab';
 import MembersTab from './membersTab';   
 import { Button } from '@/component/ui/button';
@@ -16,32 +17,67 @@ interface GroupDetailClientProps {
 }
 
 export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
-  // Stato per tenere traccia della tab attiva
   const [activeTab, setActiveTab] = useState<Tab>('expenses');
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const { user: currentUser } = useAuth(); 
 
-  const isCurrentUserAdmin = true; 
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['group-details', groupId],
+    queryFn: async () => {
+      // Eseguiamo tutte le chiamate necessarie in parallelo per efficienza
+      const [group, members, admins] = await Promise.all([
+        api.getGroupById(groupId),
+        api.getGroupMembers(groupId),
+        api.getGroupAdmins(groupId)
+      ]);
 
-  const { data: group, isLoading, isError, error } = useQuery<Group>({
-    queryKey: ['group', groupId],
-    queryFn: () => api.getGroupById(groupId),
+      // Combiniamo i dati
+      const adminIds = new Set(admins.map(a => a.user_id));
+
+      const memberDetails = await Promise.all(
+        members.map(async (member) => { 
+          const userDetails = await api.getUserDetails(member.user_id);
+    
+          return {
+            id: member.user_id, 
+            ...userDetails,   
+            isAdmin: adminIds.has(member.user_id), 
+          };
+        })
+      );
+
+      return {
+        group,
+        members: memberDetails,
+        admins: Array.from(adminIds), // Un array semplice di ID admin
+      };
+    },
     enabled: !isNaN(groupId),
   });
 
+  const isCurrentUserAdmin = !!currentUser && !!data?.admins.includes(currentUser.id);
+
   if (isLoading) return <div>Caricamento...</div>;
   if (isError) return <div className="text-red-500">Errore: {error.message}</div>;
+  if (!data || !data.group) return <div>Nessun dato trovato per questo gruppo.</div>;
 
   return (
     <div className="space-y-6">
        {/* Intestazione con pulsante Impostazioni/Elimina */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{group?.group_name}</h1>
-          <p className="text-gray-500 mt-1">{group?.desc || 'Nessuna descrizione per questo gruppo.'}</p>
+          <h1 className="text-3xl font-bold text-gray-800">{data.group.group_name}</h1>
+          <p className="text-gray-500 mt-1">{data.group.desc || 'Nessuna descrizione.'}</p>
         </div>
         {isCurrentUserAdmin && (
           <div className="flex-shrink-0 ml-4">
-            <Button variant="destructive" onClick={() => setDeleteModalOpen(true)} className="w-auto"> Elimina </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteModalOpen(true)}
+              className="w-auto"
+            >
+              Elimina Gruppo
+            </Button>
           </div>
         )}
       </div>
@@ -74,14 +110,22 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
       {/* Contenuto delle Tab */}
       <div>
         {activeTab === 'expenses' && <ExpensesTab groupId={groupId} />}
-        {activeTab === 'members' && <MembersTab groupId={groupId} />}
+        {/* Passiamo i dati già caricati ai componenti figli */}
+        {activeTab === 'members' && (
+          <MembersTab
+            groupId={groupId}
+            initialMembers={data.members}
+            isCurrentUserAdmin={isCurrentUserAdmin}
+          />
+        )}
       </div>
 
-       <DeleteGroupModal
+      {/* Modale di cancellazione */}
+      <DeleteGroupModal
         isOpen={isDeleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         groupId={groupId}
-        groupName={group?.group_name || ''}
+        groupName={data.group?.group_name || ''}
       />
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { User } from '@/types';
 import { MemberDetails } from '@/types';
 import { Button } from '@/component/ui/button';
 import { Modal } from '@/component/ui/modal';
@@ -12,18 +11,18 @@ interface MemberDetailModalProps {
   member: MemberDetails;
   groupId: number;
   onClose: () => void;
+  isCurrentUserAdmin: boolean;
 }
 
-export default function MemberDetailModal({ member, groupId, onClose }: MemberDetailModalProps) {
+export default function MemberDetailModal({ member, groupId, onClose, isCurrentUserAdmin }: MemberDetailModalProps) {
   const queryClient = useQueryClient();
-
   const { user: currentUser } = useAuth();
 
   const promoteMutation = useMutation({
     mutationFn: () => api.promoteToAdmin(groupId, member.id),
     onSuccess: () => {
       // Invalidiamo la query dei membri per aggiornare la lista e mostrare il nuovo tag "Admin"
-      queryClient.invalidateQueries({ queryKey: ['members', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
       alert(`${member.username} è stato promosso ad amministratore!`);
       onClose();
     },
@@ -36,16 +35,25 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
     mutationFn: () => api.removeMemberFromGroup(groupId, member.id),
     onSuccess: () => {
       // Invalidiamo la cache dei membri per aggiornare la lista
-      queryClient.invalidateQueries({ queryKey: ['members', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
       alert(`${member.username} è stato rimosso dal gruppo.`);
       onClose();
     },
     onError: (error) => alert(`Errore: ${error.message}`),
   });
 
-  const isCurrentUserAdmin = true;
+  const demoteMutation = useMutation({
+    mutationFn: () => api.demoteAdmin(groupId, member.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
+      alert(`I privilegi di admin sono stati rimossi da ${member.username}.`);
+      onClose();
+    },
+    onError: (error) => alert(`Errore: ${error.message}`),
+  });
   
-  const canBeRemoved = currentUser?.id !== member.id;
+  const isLoading = promoteMutation.isPending || removeMutation.isPending || demoteMutation.isPending;
+  const isSelf = currentUser?.id === member.id;
 
   return (
     <Modal isOpen={true} onClose={onClose} title={`Dettagli di ${member.username}`}>
@@ -63,10 +71,22 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
          {isCurrentUserAdmin && (
           <div className="pt-4 border-t space-y-3">            
             {/* Pulsante Promuovi (visibile solo se non è già admin) */}
-            {!member.isAdmin && (
+            {member.isAdmin ? (
+              // E non è l'utente corrente (non puoi degradare te stesso)
+              !isSelf && (
+                <Button
+                  onClick={() => demoteMutation.mutate()}
+                  disabled={isLoading}
+                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-white" // Stile diverso per questa azione
+                >
+                  {demoteMutation.isPending ? 'Rimozione privilegi...' : 'Rimuovi privilegi di Admin'}
+                </Button>
+              )
+            ) : (
+              // Se non è admin, mostra il pulsante per promuoverlo
               <Button
                 onClick={() => promoteMutation.mutate()}
-                disabled={promoteMutation.isPending || removeMutation.isPending}
+                disabled={isLoading}
                 className="w-full"
               >
                 {promoteMutation.isPending ? 'Promozione...' : 'Promuovi ad Admin'}
@@ -74,7 +94,7 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
             )}
 
             {/* Messaggio se non si può rimuovere se stessi */}
-           {canBeRemoved && (
+           {!isSelf && (
               <Button
                 variant="destructive"
                 onClick={() => {
@@ -88,19 +108,7 @@ export default function MemberDetailModal({ member, groupId, onClose }: MemberDe
                 {removeMutation.isPending ? 'Rimozione...' : 'Rimuovi dal Gruppo'}
               </Button>
             )}
-
-            {/* Ora possiamo de-commentare e usare questa logica */}
-            {!canBeRemoved && (
-              <p className="text-xs text-gray-500 text-center">Non puoi rimuovere te stesso dal gruppo.</p>
-            )}
           </div>
-        )}
-
-        {/* Mostra se l'utente è già admin */}
-        {member.isAdmin && (
-           <p className="pt-4 border-t text-sm font-semibold text-blue-600">
-             Questo utente è già un amministratore del gruppo.
-           </p>
         )}
       </div>
     </Modal>

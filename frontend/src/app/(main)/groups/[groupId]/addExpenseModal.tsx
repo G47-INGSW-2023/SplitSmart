@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { User } from '@/types';
+import { AddExpenseData, User } from '@/types';
 import { Modal } from '@/component/ui/modal';
 import { Input } from '@/component/ui/input';
 import { Button } from '@/component/ui/button';
 import { Textarea } from '@/component/ui/textarea';
+import { useAuth } from '@/lib/authContext';
 
 interface AddExpenseModalProps {
   groupId: number;
@@ -18,24 +19,83 @@ interface AddExpenseModalProps {
 type DivisionType = 'equal' | 'manual';
 
 export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpenseModalProps) {
-  // Stato del form
   const [description, setDescription] = useState('');
   const [totalAmount, setTotalAmount] = useState<number | 0>(0);
   const [divisionType, setDivisionType] = useState<DivisionType>('equal');
-
-  // Stato per la divisione
-  // Per la divisione equa, teniamo traccia degli ID degli utenti selezionati
   const [selectedMembers, setSelectedMembers] = useState<Set<number>>(new Set());
-  // Per la divisione manuale, teniamo traccia degli importi per ogni utente
   const [manualAmounts, setManualAmounts] = useState<Record<number, number | 0>>({});
 
-  // Recuperiamo i membri del gruppo per mostrarli nella lista
+  const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: members, isLoading: isLoadingMembers } = useQuery<User[]>({
-    queryKey: ['members', groupId],
-    queryFn: () => api.getGroupMembers(groupId),
-    enabled: isOpen, // Esegui la query solo quando il modale è aperto
+    queryKey: ['members-for-expense', groupId],
+    queryFn: async () => {
+      const groupMembers = await api.getGroupMembers(groupId);
+
+      const detailedMembers: Promise<User>[] = groupMembers.map(async (member) => {
+        
+      const userDetails = await api.getUserDetails(member.user_id);
+        return {
+          id: member.user_id,
+          username: userDetails.username,
+          email: userDetails.email,
+        };
+      });
+
+      // 3. Aspetta che tutte le promesse di recupero dettagli siano risolte
+      return Promise.all(detailedMembers);
+    },
+    enabled: isOpen,
   });
 
+  const addExpenseMutation = useMutation({
+    mutationFn: (data: AddExpenseData) => api.addExpense(groupId, data),
+    onSuccess: () => {
+      // Se l'aggiunta ha successo, invalidiamo la cache delle spese
+      // per aggiornare automaticamente la lista nella tab.
+      queryClient.invalidateQueries({ queryKey: ['expenses', groupId] });
+      alert("Spesa aggiunta con successo!");
+      onClose(); // Chiude il modale
+    },
+    onError: (error) => {
+      alert(`Errore nell'aggiunta della spesa: ${error.message}`);
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return alert("Errore: utente non loggato.");
+    if (!description.trim()) return alert("La descrizione è obbligatoria.");
+    
+    const numericTotalAmount = Number(totalAmount) || 0;
+    if (numericTotalAmount <= 0) return alert("L'importo deve essere maggiore di zero.");
+
+    let division: [number, number][] = [];
+
+    if (divisionType === 'equal') {
+      if (selectedMembers.size === 0) return alert("Seleziona almeno un membro per la divisione.");
+      const amountPerPerson = numericTotalAmount / selectedMembers.size;
+      division = Array.from(selectedMembers).map(memberId => [memberId, parseFloat(amountPerPerson.toFixed(2))]);
+    } else { // 'manual'
+      const manualSum = Object.values(manualAmounts).reduce((sum, val) => sum + (Number(val) || 0), 0);
+      if (Math.abs(manualSum - numericTotalAmount) > 0.01) {
+        return alert("La somma delle parti non corrisponde all'importo totale.");
+      }
+      division = Object.entries(manualAmounts)
+        .filter(([, amount]) => Number(amount) > 0)
+        .map(([userId, amount]) => [Number(userId), Number(amount)]);
+    }
+
+     const expenseData: AddExpenseData = {
+      desc: description,
+      total_amount: numericTotalAmount,
+      paid_by: currentUser.id,
+      division: division,
+    };
+
+    addExpenseMutation.mutate(expenseData);
+  };
   // Gestione della logica di divisione
   const handleToggleMember = (memberId: number) => {
     const newSelection = new Set(selectedMembers);
@@ -61,21 +121,6 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
       setManualAmounts({});
     }
   }, [isOpen]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Qui andrà la logica di `useMutation` per inviare i dati al backend
-    console.log({
-      description,
-      totalAmount,
-      divisionType,
-      ...(divisionType === 'equal' && { members: Array.from(selectedMembers) }),
-      ...(divisionType === 'manual' && { amounts: manualAmounts }),
-    });
-    alert("Logica di salvataggio da implementare!");
-    // onClose();
-  };
-
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi una nuova spesa">
@@ -137,7 +182,9 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
         {/* Pulsanti di Azione */}
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>Annulla</Button>
-          <Button type="submit" disabled={divisionType === 'manual' && !totalIsCorrect}>Crea Spesa</Button>
+          <Button type="submit" disabled={addExpenseMutation.isPending}>
+            {addExpenseMutation.isPending ? 'Salvataggio...' : 'Crea Spesa'}
+          </Button>       
         </div>
       </form>
     </Modal>
