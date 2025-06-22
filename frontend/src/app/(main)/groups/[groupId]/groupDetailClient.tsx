@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Group } from '@/types';
@@ -21,55 +21,75 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const { user: currentUser } = useAuth(); 
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['group-details', groupId],
+   const { data: processedData, isLoading, isError, error } = useQuery({
+    queryKey: ['group-details-processed', groupId],
     queryFn: async () => {
-      // Eseguiamo tutte le chiamate necessarie in parallelo per efficienza
-      const [group, members, admins] = await Promise.all([
+      if (!currentUser) return null; // Guardia di sicurezza
+
+      const [group, members, admins, expensesWithParticipants] = await Promise.all([
         api.getGroupById(groupId),
         api.getGroupMembers(groupId),
-        api.getGroupAdmins(groupId)
+        api.getGroupAdmins(groupId),
+        api.getGroupExpenses(groupId),
       ]);
+      
+      // --- Logica di calcolo saldi ---
+      const balances = new Map<number, number>();
+      for (const [expense, participants] of expensesWithParticipants) {
+        const myParticipation = participants.find(p => p.user_id === currentUser.id);
+        const myShare = myParticipation?.amount_due || 0;
+        if (expense.paid_by === currentUser.id) {
+          for (const p of participants) {
+            if (p.user_id !== currentUser.id) {
+              balances.set(p.user_id, (balances.get(p.user_id) || 0) + (p.amount_due || 0));
+            }
+          }
+        } else if (myParticipation) {
+          balances.set(expense.paid_by, (balances.get(expense.paid_by) || 0) - myShare);
+        }
+      }
 
-      // Combiniamo i dati
       const adminIds = new Set(admins.map(a => a.user_id));
-
+      
       const memberDetails = await Promise.all(
-        members.map(async (member) => { 
+        members.map(async (member) => {
           const userDetails = await api.getUserDetails(member.user_id);
-    
           return {
-            id: member.user_id, 
-            ...userDetails,   
-            isAdmin: adminIds.has(member.user_id), 
+            id: member.user_id,
+            username: userDetails.username,
+            email: userDetails.email,
+            isAdmin: adminIds.has(member.user_id),
+            balance: balances.get(member.user_id) || 0,
           };
         })
       );
 
+      const totalBalance = Array.from(balances.values()).reduce((sum, amount) => sum + amount, 0);
+
       return {
         group,
         members: memberDetails,
-        admins: Array.from(adminIds), // Un array semplice di ID admin
+        expenses: expensesWithParticipants,
+        totalBalance,
+        isCurrentUserAdmin: adminIds.has(currentUser.id),
       };
     },
-    enabled: !isNaN(groupId),
+    enabled: !isNaN(groupId) && !!currentUser,
   });
-
-  const isCurrentUserAdmin = !!currentUser && !!data?.admins.includes(currentUser.id);
 
   if (isLoading) return <div>Caricamento...</div>;
   if (isError) return <div className="text-red-500">Errore: {error.message}</div>;
-  if (!data || !data.group) return <div>Nessun dato trovato per questo gruppo.</div>;
+  if (!processedData) return <div>Dati non disponibili.</div>;
 
   return (
     <div className="space-y-6">
        {/* Intestazione con pulsante Impostazioni/Elimina */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{data.group.group_name}</h1>
-          <p className="text-gray-500 mt-1">{data.group.desc || 'Nessuna descrizione.'}</p>
+          <h1 className="text-3xl font-bold text-gray-800">{processedData.group.group_name}</h1>
+          <p className="text-gray-500 mt-1">{processedData.group.desc || 'Nessuna descrizione.'}</p>
         </div>
-        {isCurrentUserAdmin && (
+        {processedData.isCurrentUserAdmin && (
           <div className="flex-shrink-0 ml-4">
             <Button
               variant="destructive"
@@ -80,6 +100,13 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
             </Button>
           </div>
         )}
+      </div>
+
+      <div className="p-4 rounded-lg bg-white shadow-sm text-center">
+        <p className="text-sm text-gray-500">Il tuo saldo in questo gruppo</p>
+        <p className={`text-2xl font-bold ${processedData.totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {processedData.totalBalance >= 0 ? '+' : ''}{processedData.totalBalance.toFixed(2)} €
+        </p>
       </div>
       {/* Selettore Tab */}
       <div className="border-b border-gray-200">
@@ -109,23 +136,28 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
 
       {/* Contenuto delle Tab */}
       <div>
-        {activeTab === 'expenses' && <ExpensesTab groupId={groupId} />}
-        {/* Passiamo i dati già caricati ai componenti figli */}
+        {activeTab === 'expenses' && (
+          <ExpensesTab 
+            groupId={groupId} 
+            initialExpenses={processedData.expenses} 
+          />
+        )}
         {activeTab === 'members' && (
           <MembersTab
             groupId={groupId}
-            initialMembers={data.members}
-            isCurrentUserAdmin={isCurrentUserAdmin}
+            initialMembers={processedData.members}
+            isCurrentUserAdmin={processedData.isCurrentUserAdmin}
+            totalBalance={processedData.totalBalance} 
           />
         )}
       </div>
-
+      
       {/* Modale di cancellazione */}
       <DeleteGroupModal
         isOpen={isDeleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         groupId={groupId}
-        groupName={data.group?.group_name || ''}
+        groupName={processedData.group.group_name || ''}
       />
     </div>
   );

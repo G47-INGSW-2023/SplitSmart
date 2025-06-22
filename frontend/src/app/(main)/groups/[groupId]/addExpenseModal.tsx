@@ -54,7 +54,7 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
     onSuccess: () => {
       // Se l'aggiunta ha successo, invalidiamo la cache delle spese
       // per aggiornare automaticamente la lista nella tab.
-      queryClient.invalidateQueries({ queryKey: ['expenses', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
       alert("Spesa aggiunta con successo!");
       onClose(); // Chiude il modale
     },

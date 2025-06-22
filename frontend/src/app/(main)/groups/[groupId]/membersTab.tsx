@@ -7,28 +7,29 @@ import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { useState } from 'react';
 import MemberDetailModal from './memberDetailModal'; // Importiamo il nuovo modale
+import { useAuth } from '@/lib/authContext'; // 1. Assicurati che useAuth sia importato
 
 interface MembersTabProps {
-  groupId: number;
-  initialMembers: MemberDetails[];
+ groupId: number;
+  initialMembers: (MemberDetails & { balance: number })[];
   isCurrentUserAdmin: boolean;
+  totalBalance: number;
 }
 
-
-export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin }: MembersTabProps) {
+export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin, totalBalance }: MembersTabProps) {
+  const { user: currentUser } = useAuth(); 
   const [inviteEmail, setInviteEmail] = useState('');
   const [selectedMember, setSelectedMember] = useState<MemberDetails | null>(null);
   const queryClient = useQueryClient();
 
   const inviteMutation = useMutation({
-    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),     
-    
-onSuccess: () => {
+    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
+    onSuccess: () => {
       alert('Invito inviato con successo!'); 
       setInviteEmail('');
-      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
+      // Invalidiamo la query principale per aggiornare la lista membri
+      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
     },
-    
     onError: (error) => {
       alert(`Errore nell'invio dell'invito: ${error.message}`);
     }
@@ -67,27 +68,59 @@ onSuccess: () => {
         </div>
       )}
 
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri del gruppo</h3>
+     <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri e Saldi</h3>
         <ul className="space-y-2">
-          {initialMembers.map(member => (
-            <li key={member.id}>
-              <button
-                onClick={() => setSelectedMember(member)}
-                className="w-full bg-white p-4 rounded-lg shadow-sm flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-gray-900">{member.username}</span>
-                  <span className="text-sm text-gray-500">{member.email}</span>
-                </div>
-                {member.isAdmin && (
-                  <span className="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">
-                    Admin
-                  </span>
-                )}
-              </button>
-            </li>
-          ))}
+          {initialMembers
+            .sort((a, b) => {
+              if (a.id === currentUser?.id) return -1;
+              if (b.id === currentUser?.id) return 1;
+              return a.username.localeCompare(b.username);
+            })
+            .map(member => {
+              const isSelf = member.id === currentUser?.id;
+
+              // --- LOGICA DI VISUALIZZAZIONE AGGIORNATA ---
+              if (isSelf) {
+                // Renderizzazione speciale per l'utente corrente
+                const totalBalanceColor = totalBalance >= 0 ? 'text-green-600' : 'text-red-600';
+                return (
+                  <li key={member.id} className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">
+                        {member.username} (Tu)
+                      </span>
+                      <div className={`text-right ${totalBalanceColor}`}>
+                        <p className="text-xs">Saldo Totale</p>
+                        <p className="font-bold text-lg">
+                          {totalBalance >= 0 ? '+' : ''}{totalBalance.toFixed(2)} €
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              } else {
+                // Renderizzazione standard per gli altri membri
+                const balance = member.balance;
+                const balanceColor = balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-500';
+                return (
+                  <li key={member.id}>
+                    <button
+                      onClick={() => setSelectedMember(member)}
+                      className="w-full bg-white p-4 rounded-lg shadow-sm flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="font-medium text-gray-900">{member.username}</span>
+                      <div className={`text-right ${balanceColor}`}>
+                        <p className="text-xs">
+                          {balance > 0 ? 'Ti deve' : balance < 0 ? 'Gli devi' : 'In pari'}
+                        </p>
+                        <p className="font-semibold">{balance.toFixed(2)} €</p>
+                      </div>
+                    </button>
+                  </li>
+                );
+              }
+            })}
         </ul>
       </div>
 

@@ -7,6 +7,7 @@ import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { Textarea } from '@/component/ui/textarea'; // Assicurati di avere questo componente
 import { Modal } from '@/component/ui/modal'; // E anche questo
+import { useAuth } from '@/lib/authContext'; // Importa useAuth per ottenere l'ID utente
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -17,25 +18,23 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth(); // Ottieni l'utente corrente
 
   // useMutation gestisce la logica di chiamata API per azioni (POST, PUT, DELETE)
   const createGroupMutation = useMutation({
-    mutationFn: api.createGroup, // La funzione da eseguire
+    mutationFn: api.createGroup,
     onSuccess: () => {
-      // Quando la creazione ha successo:
-      // 1. Invalidiamo la query 'groups'. React Query la rieseguirà automaticamente,
-      //    aggiornando la lista dei gruppi nella dashboard. È magico!
-      console.log('Gruppo creato! Invalido la cache dei gruppi.');
-      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      // --- CORREZIONE CHIAVE QUI ---
+      // Invalidiamo la query che carica la lista dei gruppi con i loro saldi.
+      // È importante che la chiave corrisponda esattamente a quella usata in `GroupList.tsx`.
+      queryClient.invalidateQueries({ queryKey: ['groups-with-balances', currentUser?.id] });
       
-      // 2. Chiudiamo il modale e resettiamo i campi
-      onClose();
-      setName('');
-      setDescription('');
+      alert('Gruppo creato con successo!');
+      onClose(); // Chiudi il modale
     },
     onError: (error) => {
-      // Possiamo gestire l'errore qui se vogliamo fare qualcosa di specifico
       console.error("Errore durante la creazione del gruppo:", error);
+      alert(`Errore: ${error.message}`);
     }
   });
 
@@ -49,8 +48,9 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
     createGroupMutation.mutate({ name, description });
   };
 
-  if (!isOpen) {
-    return null;
+  if (!isOpen && (name || description)) {
+    setName('');
+    setDescription('');
   }
 
   return (
