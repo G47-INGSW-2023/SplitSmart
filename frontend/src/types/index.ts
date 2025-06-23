@@ -85,6 +85,28 @@ export interface GroupInvite {
   optional_message: string | null;
 }
 
-export interface MemberDetails extends User {
+export interface ProcessedMember extends User {
   isAdmin: boolean;
+  netBalance: number; // Il suo saldo netto totale nel gruppo
+  debts: DebtDetail[]; // La lista dettagliata dei suoi debiti/crediti
+}
+
+export interface BalanceDetail {
+  otherUserName: string;
+  amount: number; 
+}
+
+export interface DebtDetail {
+  otherMemberId: number;
+  otherMemberName: string;
+  amount: number;
+}
+
+export interface MemberWithDetails {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  netBalance: number; 
+  debts: DebtDetail[];
 }

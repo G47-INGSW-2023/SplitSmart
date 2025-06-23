@@ -128,6 +128,24 @@ export const api = {
     }
   },
 
+   /**
+    * Modifica un gruppo.
+    */
+  updateGroup: async (groupId: number, data: CreateGroupData): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile aggiornare il gruppo.";
+      throw new Error(errorMessage);
+    }
+  },
+
   /**
    * Recupera gli ID dei membri di un gruppo.
    */
@@ -178,7 +196,7 @@ export const api = {
   },
 
    /**
-   * Aggiunge una nuova spesa a un gruppo (REALE).
+   * Aggiunge una nuova spesa a un gruppo.
    */
   addExpense: async (groupId: number, data: AddExpenseData): Promise<Expense> => {
     const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/expenses`, {

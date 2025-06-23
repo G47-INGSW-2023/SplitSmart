@@ -2,13 +2,13 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { MemberDetails } from '@/types';
+import { ProcessedMember, ExpenseWithParticipants } from '@/types';
 import { Button } from '@/component/ui/button';
 import { Modal } from '@/component/ui/modal';
 import { useAuth } from '@/lib/authContext';
 
 interface MemberDetailModalProps {
-  member: MemberDetails;
+  member: ProcessedMember;
   groupId: number;
   onClose: () => void;
   isCurrentUserAdmin: boolean;
@@ -21,31 +21,28 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
   const promoteMutation = useMutation({
     mutationFn: () => api.promoteToAdmin(groupId, member.id),
     onSuccess: () => {
-      // Invalidiamo la query dei membri per aggiornare la lista e mostrare il nuovo tag "Admin"
-      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
+     queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
       alert(`${member.username} è stato promosso ad amministratore!`);
       onClose();
     },
-    onError: (error) => {
-      alert(`Errore: ${error.message}`);
-    }
+    onError: (error) => alert(`Errore: ${error.message}`),
   });
 
   const removeMutation = useMutation({
     mutationFn: () => api.removeMemberFromGroup(groupId, member.id),
     onSuccess: () => {
-      // Invalidiamo la cache dei membri per aggiornare la lista
-      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
+     queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
       alert(`${member.username} è stato rimosso dal gruppo.`);
       onClose();
     },
     onError: (error) => alert(`Errore: ${error.message}`),
   });
 
+
   const demoteMutation = useMutation({
     mutationFn: () => api.demoteAdmin(groupId, member.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-details', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
       alert(`I privilegi di admin sono stati rimossi da ${member.username}.`);
       onClose();
     },

@@ -3,14 +3,16 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Group } from '@/types';
+import { Group, ProcessedMember, BalanceDetail, MemberWithDetails, DebtDetail } from '@/types';
 import { useAuth } from '@/lib/authContext';
 import ExpensesTab from './expensesTab';
 import MembersTab from './membersTab';   
 import { Button } from '@/component/ui/button';
 import DeleteGroupModal from './deleteGroupModal';
+import EditGroupModal from './editGroupModal';
 
-type Tab = 'expenses' | 'members'; // Definiamo i tipi di tab possibili
+
+type Tab = 'expenses' | 'members'; // Aggiungiamo la nuova tab
 
 interface GroupDetailClientProps {
   groupId: number;
@@ -19,58 +21,78 @@ interface GroupDetailClientProps {
 export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('expenses');
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
   const { user: currentUser } = useAuth(); 
 
    const { data: processedData, isLoading, isError, error } = useQuery({
-    queryKey: ['group-details-processed', groupId],
+    queryKey: ['group-debts-matrix', groupId],
     queryFn: async () => {
-      if (!currentUser) return null; // Guardia di sicurezza
+      if (!currentUser) return null;
 
-      const [group, members, admins, expensesWithParticipants] = await Promise.all([
+      // Corretto il nome della variabile in `expensesWithParticipants`
+      const [group, membersResponse, admins, expensesWithParticipants] = await Promise.all([
         api.getGroupById(groupId),
         api.getGroupMembers(groupId),
         api.getGroupAdmins(groupId),
         api.getGroupExpenses(groupId),
       ]);
       
-      // --- Logica di calcolo saldi ---
-      const balances = new Map<number, number>();
+      // --- Logica di calcolo saldi (spostata in cima per chiarezza) ---
+      const netBalances = new Map<number, number>();
       for (const [expense, participants] of expensesWithParticipants) {
-        const myParticipation = participants.find(p => p.user_id === currentUser.id);
-        const myShare = myParticipation?.amount_due || 0;
-        if (expense.paid_by === currentUser.id) {
-          for (const p of participants) {
-            if (p.user_id !== currentUser.id) {
-              balances.set(p.user_id, (balances.get(p.user_id) || 0) + (p.amount_due || 0));
-            }
-          }
-        } else if (myParticipation) {
-          balances.set(expense.paid_by, (balances.get(expense.paid_by) || 0) - myShare);
+        for (const p of participants) {
+          netBalances.set(p.user_id, (netBalances.get(p.user_id) || 0) - (p.amount_due || 0));
         }
+        netBalances.set(expense.paid_by, (netBalances.get(expense.paid_by) || 0) + expense.total_amount);
       }
-
-      const adminIds = new Set(admins.map(a => a.user_id));
       
-      const memberDetails = await Promise.all(
-        members.map(async (member) => {
-          const userDetails = await api.getUserDetails(member.user_id);
-          return {
-            id: member.user_id,
-            username: userDetails.username,
-            email: userDetails.email,
-            isAdmin: adminIds.has(member.user_id),
-            balance: balances.get(member.user_id) || 0,
-          };
-        })
+      const adminIds = new Set(admins.map(a => a.user_id));
+      const allUserDetails = await Promise.all(
+        membersResponse.map(async m => ({...await api.getUserDetails(m.user_id), id: m.user_id}))
       );
+      const userMap = new Map(allUserDetails.map(u => [u.id, u]));
 
-      const totalBalance = Array.from(balances.values()).reduce((sum, amount) => sum + amount, 0);
+      // Costruiamo i dati finali per i membri
+       const finalMembers: ProcessedMember[] = allUserDetails.map(user => {
+        let netBalance = 0;
+        const debts: DebtDetail[] = [];
+
+        for (const [key, amount] of netDebts.entries()) {
+          const [fromId, toId] = key.split('-').map(Number);
+          
+          if (user.id === fromId) { // Lui è il debitore
+            netBalance -= amount;
+            debts.push({
+              otherMemberId: toId,
+              otherMemberName: userMap.get(toId)?.username || 'Sconosciuto',
+              amount: -amount,
+            });
+          } else if (user.id === toId) { // Lui è il creditore
+            netBalance += amount;
+            debts.push({
+              otherMemberId: fromId,
+              otherMemberName: userMap.get(fromId)?.username || 'Sconosciuto',
+              amount: amount,
+            });
+          }
+        }
+        
+        return {
+          ...user,
+          isAdmin: adminIds.has(user.id),
+          netBalance: netBalance,
+          debts: debts, // Assicurati che l'array `debts` sia qui
+        };
+      });
+
+      // Calcoliamo il saldo totale dell'utente corrente
+      const myTotalBalance = netBalances.get(currentUser.id) || 0;
 
       return {
         group,
-        members: memberDetails,
+        members: finalMembers,
         expenses: expensesWithParticipants,
-        totalBalance,
+        totalBalance: myTotalBalance, // Aggiunto di nuovo
         isCurrentUserAdmin: adminIds.has(currentUser.id),
       };
     },
@@ -87,26 +109,26 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{processedData.group.group_name}</h1>
-          <p className="text-gray-500 mt-1">{processedData.group.desc || 'Nessuna descrizione.'}</p>
+          <p className="text-gray-500 mt-1">{processedData.group.desc}</p>
         </div>
         {processedData.isCurrentUserAdmin && (
-          <div className="flex-shrink-0 ml-4">
+          <div className="flex-shrink-0 ml-4 flex gap-2">
+            <Button
+              variant="secondary" // Usiamo uno stile meno "pericoloso"
+              onClick={() => setEditModalOpen(true)}
+              className="w-auto"
+            >
+              Modifica
+            </Button>
             <Button
               variant="destructive"
               onClick={() => setDeleteModalOpen(true)}
               className="w-auto"
             >
-              Elimina Gruppo
+              Elimina
             </Button>
           </div>
         )}
-      </div>
-
-      <div className="p-4 rounded-lg bg-white shadow-sm text-center">
-        <p className="text-sm text-gray-500">Il tuo saldo in questo gruppo</p>
-        <p className={`text-2xl font-bold ${processedData.totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {processedData.totalBalance >= 0 ? '+' : ''}{processedData.totalBalance.toFixed(2)} €
-        </p>
       </div>
       {/* Selettore Tab */}
       <div className="border-b border-gray-200">
@@ -151,6 +173,12 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
           />
         )}
       </div>
+      
+      <EditGroupModal
+        isOpen={isEditModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        group={processedData.group}
+      />
       
       {/* Modale di cancellazione */}
       <DeleteGroupModal

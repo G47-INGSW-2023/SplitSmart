@@ -1,33 +1,92 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { User, GroupMember, MemberDetails } from '@/types'; 
+// Rimuoviamo `useMemo`, `simplifyDebts`, `SimplifiedTransaction` che non servono più
+import { useState } from 'react';
+import { useAuth } from '@/lib/authContext';
+import { ProcessedMember, ExpenseWithParticipants, MemberWithDetails } from '@/types';
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
-import { useState } from 'react';
-import MemberDetailModal from './memberDetailModal'; // Importiamo il nuovo modale
-import { useAuth } from '@/lib/authContext'; // 1. Assicurati che useAuth sia importato
+import MemberDetailModal from './memberDetailModal';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 interface MembersTabProps {
- groupId: number;
-  initialMembers: (MemberDetails & { balance: number })[];
+  groupId: number;
+  initialMembers: ProcessedMember[];
   isCurrentUserAdmin: boolean;
-  totalBalance: number;
+  totalBalance: number; // Aggiungi questa riga
+}
+
+const MemberRow = ({ member }: { member: ProcessedMember }) => {
+  const [isExpanded, setIsExpanded] = useState(false); // Stato di espansione per ogni riga
+  const { user: currentUser } = useAuth();
+  
+  const isSelf = member.id === currentUser?.id;
+  const balance = member.netBalance;
+  const balanceColor = balance > 0.01 ? 'text-green-600' : balance < -0.01 ? 'text-red-600' : 'text-gray-500';
+
+  return (
+    <li className="bg-white rounded-lg shadow-sm">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 flex items-center justify-between text-left"
+      >
+        {/* Colonna Sinistra: Nome, (Tu), [Admin] */}
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900">{member.username}</span>
+          {isSelf && <span className="font-normal text-blue-600 ml-1">(Tu)</span>}
+          {member.isAdmin && <span className="text-xs font-semibold ...">Admin</span>}
+        </div>
+        {/* Colonna Destra: Saldo Netto */}
+        <div className={`text-right ${balanceColor}`}>
+          <p className="font-semibold">{Math.abs(balance).toFixed(2)} €</p>
+          <p className="text-xs">
+            {balance > 0.01 ? 'Deve Ricevere' : balance < -0.01 ? 'Deve Dare' : 'In Pari'}
+          </p>
+        </div>
+      </button>
+
+      {/* Dettaglio Espandibile */}
+     {isExpanded && (
+        <div className="border-t border-gray-200 p-4 space-y-2">
+          <h4 className="font-semibold text-sm text-gray-700">Dettaglio Saldo:</h4>
+          {member.debts.length > 0 ? (
+            <ul className="text-sm space-y-1">
+              {member.debts.map(debt => (
+                <li key={debt.otherMemberId} className="flex justify-between items-center">
+                  <span className="text-gray-800">
+                    {/* `debt.amount` è negativo se `member` deve soldi */}
+                    {debt.amount < 0 
+                      ? `Deve a ${debt.otherMemberName}` 
+                      : `${debt.otherMemberName} gli deve`}
+                  </span>
+                  <span className={`font-medium ${debt.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    {Math.abs(debt.amount).toFixed(2)} €
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">In pari con tutti i membri del gruppo.</p>
+          )}
+        </div>
+      )}
+    </li>
+  );
 }
 
 export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin, totalBalance }: MembersTabProps) {
-  const { user: currentUser } = useAuth(); 
+  const { user: currentUser } = useAuth();
   const [inviteEmail, setInviteEmail] = useState('');
-  const [selectedMember, setSelectedMember] = useState<MemberDetails | null>(null);
+  const [selectedMember, setSelectedMember] = useState<ProcessedMember | null>(null);
   const queryClient = useQueryClient();
 
+  // La logica di invito rimane invariata
   const inviteMutation = useMutation({
     mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
     onSuccess: () => {
       alert('Invito inviato con successo!'); 
       setInviteEmail('');
-      // Invalidiamo la query principale per aggiornare la lista membri
       queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
     },
     onError: (error) => {
@@ -42,8 +101,8 @@ export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin
   };
 
   return (
-    <div className="space-y-8">
-      {/* Sezione Invito */}
+    <div className="space-y-8">   
+      {/* 2. Sezione Invito (mantenuta) */}
       {isCurrentUserAdmin && (
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
@@ -62,75 +121,30 @@ export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin
               disabled={inviteMutation.isPending}
               className="w-full sm:w-auto"
             >
-              {inviteMutation.isPending ? 'Invio...' : 'Invita'}
+              {inviteMutation.isPending ? 'Invio...' : 'Invia Invito'}
             </Button>
           </form>
         </div>
       )}
 
-     <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri e Saldi</h3>
+      {/* 3. Ripristino della Lista dei Saldi Individuali */}
+         <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri e Saldi del Gruppo</h3>
         <ul className="space-y-2">
-          {initialMembers
-            .sort((a, b) => {
-              if (a.id === currentUser?.id) return -1;
-              if (b.id === currentUser?.id) return 1;
-              return a.username.localeCompare(b.username);
-            })
-            .map(member => {
-              const isSelf = member.id === currentUser?.id;
-
-              // --- LOGICA DI VISUALIZZAZIONE AGGIORNATA ---
-              if (isSelf) {
-                // Renderizzazione speciale per l'utente corrente
-                const totalBalanceColor = totalBalance >= 0 ? 'text-green-600' : 'text-red-600';
-                return (
-                  <li key={member.id} className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-900">
-                        {member.username} (Tu)
-                      </span>
-                      <div className={`text-right ${totalBalanceColor}`}>
-                        <p className="text-xs">Saldo Totale</p>
-                        <p className="font-bold text-lg">
-                          {totalBalance >= 0 ? '+' : ''}{totalBalance.toFixed(2)} €
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                );
-              } else {
-                // Renderizzazione standard per gli altri membri
-                const balance = member.balance;
-                const balanceColor = balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-500';
-                return (
-                  <li key={member.id}>
-                    <button
-                      onClick={() => setSelectedMember(member)}
-                      className="w-full bg-white p-4 rounded-lg shadow-sm flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <span className="font-medium text-gray-900">{member.username}</span>
-                      <div className={`text-right ${balanceColor}`}>
-                        <p className="text-xs">
-                          {balance > 0 ? 'Ti deve' : balance < 0 ? 'Gli devi' : 'In pari'}
-                        </p>
-                        <p className="font-semibold">{balance.toFixed(2)} €</p>
-                      </div>
-                    </button>
-                  </li>
-                );
-              }
-            })}
+           {initialMembers.map(member => (
+          <MemberRow key={member.id} member={member} />
+        ))}
         </ul>
       </div>
 
-      {/* Il modale di dettaglio membro. Viene mostrato solo se `selectedMember` non è null. */}
-       {selectedMember && (
+
+      {/* 4. Modale di Dettaglio (mantenuto) */}
+      {selectedMember && (
         <MemberDetailModal
           member={selectedMember}
           groupId={groupId}
           onClose={() => setSelectedMember(null)}
-          isCurrentUserAdmin={isCurrentUserAdmin} // Passiamo l'informazione al modale
+          isCurrentUserAdmin={isCurrentUserAdmin}
         />
       )}
     </div>

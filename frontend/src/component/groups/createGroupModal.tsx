@@ -67,6 +67,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
             placeholder="Es. Vacanze estive"
             required 
             disabled={createGroupMutation.isPending}
+            className="text-gray-600"
           />
         </div>
         <div>
