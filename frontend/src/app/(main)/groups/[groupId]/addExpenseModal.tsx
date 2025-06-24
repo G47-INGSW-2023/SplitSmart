@@ -50,7 +50,7 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
    const addExpenseMutation = useMutation({
     mutationFn: (data: AddExpenseData) => api.addExpense(groupId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId]});
       alert("Spesa aggiunta con successo!");
       onClose();
     },

@@ -244,7 +244,7 @@ fn add_expense(
         let expense = (
             expenses::desc.eq(new_expense.desc.clone()),
             expenses::total_amount.eq(new_expense.total_amount),
-            expenses::paid_by.eq(user.id),
+            expenses::paid_by.eq(new_expense.paid_by),
             expenses::creation_date.eq(diesel::dsl::now),
             expenses::group_id.eq(gid),
         )
@@ -458,7 +458,7 @@ fn demote_admin(gid: i32, uid: i32, user: User) -> Result<(), Status> {
     let result = diesel::delete(
         group_administrators
             .filter(group_id.eq(gid))
-            .filter(user_id.eq(gid)),
+            .filter(user_id.eq(user.id)),
     )
     .execute(&mut conn);
 

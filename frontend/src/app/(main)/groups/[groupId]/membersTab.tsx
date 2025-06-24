@@ -11,14 +11,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
 interface MembersTabProps {
-  groupId: number;
+   groupId: number;
   initialMembers: ProcessedMember[];
   isCurrentUserAdmin: boolean;
-  totalBalance: number; // Aggiungi questa riga
 }
 
-const MemberRow = ({ member }: { member: ProcessedMember }) => {
-  const [isExpanded, setIsExpanded] = useState(false); // Stato di espansione per ogni riga
+const MemberRow = ({ member, onAdminActionsClick }: { 
+  member: ProcessedMember,
+  onAdminActionsClick: (member: ProcessedMember) => void 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false); // Stato di espansione locale
   const { user: currentUser } = useAuth();
   
   const isSelf = member.id === currentUser?.id;
@@ -26,56 +28,73 @@ const MemberRow = ({ member }: { member: ProcessedMember }) => {
   const balanceColor = balance > 0.01 ? 'text-green-600' : balance < -0.01 ? 'text-red-600' : 'text-gray-500';
 
   return (
-    <li className="bg-white rounded-lg shadow-sm">
+  <li className="bg-white rounded-lg shadow-sm transition-all duration-300 overflow-hidden">
+    {/* --- PARTE SUPERIORE COMPLETAMENTE RISTRUTTURATA --- */}
+    <div className="w-full flex items-stretch text-left">
+      
+      {/* 1. AREA SINISTRA CLICCABILE (per Azioni Admin) */}
+      <button
+        onClick={() => onAdminActionsClick(member)}
+        disabled={isSelf}
+        // `flex-grow` la fa espandere. `p-4` crea l'area cliccabile.
+        // `items-center` e `justify-start` allineano il contenuto a sinistra.
+        className="flex-grow p-4 flex items-center justify-start gap-2 hover:bg-gray-50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+      >
+        <span className="font-medium text-gray-900">{member.username}</span>
+        {isSelf && <span className="font-normal text-blue-600">(Tu)</span>}
+        {member.isAdmin && <span className="text-xs font-semibold text-white bg-blue-500 px-2 py-0.5 rounded-full">Admin</span>}
+      </button>
+      
+      {/* 2. AREA DESTRA CLICCABILE (per espandere/collassare) */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 flex items-center justify-between text-left"
+        // `flex-shrink-0` impedisce al pulsante di rimpicciolirsi.
+        // `w-48` (o un altro valore) gli dà una larghezza fissa.
+        // `p-4` crea l'area cliccabile.
+        // `flex flex-col items-end` allinea il testo a destra.
+        className="flex-shrink-0 w-48 p-4 flex flex-col items-end justify-center hover:bg-gray-50 transition-colors border-l border-gray-200"
       >
-        {/* Colonna Sinistra: Nome, (Tu), [Admin] */}
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900">{member.username}</span>
-          {isSelf && <span className="font-normal text-blue-600 ml-1">(Tu)</span>}
-          {member.isAdmin && <span className="text-xs font-semibold ...">Admin</span>}
-        </div>
-        {/* Colonna Destra: Saldo Netto */}
-        <div className={`text-right ${balanceColor}`}>
-          <p className="font-semibold">{Math.abs(balance).toFixed(2)} €</p>
-          <p className="text-xs">
-            {balance > 0.01 ? 'Deve Ricevere' : balance < -0.01 ? 'Deve Dare' : 'In Pari'}
-          </p>
-        </div>
+        {Math.abs(balance) < 0.01 ? (
+          <p className="text-gray-500 font-medium">In pari</p>
+        ) : (
+          <>
+            <p className={`font-bold text-lg ${balanceColor}`}>
+              {Math.abs(balance).toFixed(2)} €
+            </p>
+            <p className={`text-xs ${balanceColor}`}>
+              {balance > 0 ? 'Deve ricevere' : 'Deve dare'}
+            </p>
+          </>
+        )}
       </button>
+    </div>
 
-      {/* Dettaglio Espandibile */}
-     {isExpanded && (
-        <div className="border-t border-gray-200 p-4 space-y-2">
-          <h4 className="font-semibold text-sm text-gray-700">Dettaglio Saldo:</h4>
-          {member.debts.length > 0 ? (
-            <ul className="text-sm space-y-1">
-              {member.debts.map(debt => (
-                <li key={debt.otherMemberId} className="flex justify-between items-center">
-                  <span className="text-gray-800">
-                    {/* `debt.amount` è negativo se `member` deve soldi */}
-                    {debt.amount < 0 
-                      ? `Deve a ${debt.otherMemberName}` 
-                      : `${debt.otherMemberName} gli deve`}
-                  </span>
-                  <span className={`font-medium ${debt.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                    {Math.abs(debt.amount).toFixed(2)} €
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-500">In pari con tutti i membri del gruppo.</p>
-          )}
-        </div>
-      )}
-    </li>
-  );
+    {/* Dettaglio Espandibile (invariato) */}
+    {isExpanded && (
+      <div className="border-t border-gray-200 bg-gray-50/50 p-4 space-y-2">
+        <h4 className="font-semibold text-sm text-gray-700">Dettaglio Saldo:</h4>
+        {member.debts.length > 0 ? (
+          <ul className="text-sm space-y-1">
+            {member.debts.map(debt => (
+              <li key={debt.otherMemberId} className="flex justify-between items-center">
+                <span className="text-gray-700">
+                  {debt.amount > 0 ? `Riceve da ${debt.otherMemberName}` : `Paga a ${debt.otherMemberName}`}
+                </span>
+                <span className={`font-medium ${debt.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {Math.abs(debt.amount).toFixed(2)} €
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-center text-gray-500">In pari con tutti i membri del gruppo.</p>
+        )}
+      </div>
+    )}
+  </li>
+);
 }
-
-export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin, totalBalance }: MembersTabProps) {
+export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin }: MembersTabProps) {
   const { user: currentUser } = useAuth();
   const [inviteEmail, setInviteEmail] = useState('');
   const [selectedMember, setSelectedMember] = useState<ProcessedMember | null>(null);
@@ -87,7 +106,7 @@ export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin
     onSuccess: () => {
       alert('Invito inviato con successo!'); 
       setInviteEmail('');
-      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
     },
     onError: (error) => {
       alert(`Errore nell'invio dell'invito: ${error.message}`);
@@ -127,17 +146,18 @@ export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin
         </div>
       )}
 
-      {/* 3. Ripristino della Lista dei Saldi Individuali */}
-         <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri e Saldi del Gruppo</h3>
-        <ul className="space-y-2">
-           {initialMembers.map(member => (
-          <MemberRow key={member.id} member={member} />
-        ))}
+       <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Panoramica Saldi Membri</h3>
+        <ul className="space-y-3">
+          {initialMembers.map(member => (
+            <MemberRow
+                key={member.id}
+                member={member}
+                onAdminActionsClick={setSelectedMember}
+            />
+          ))}
         </ul>
       </div>
-
-
       {/* 4. Modale di Dettaglio (mantenuto) */}
       {selectedMember && (
         <MemberDetailModal

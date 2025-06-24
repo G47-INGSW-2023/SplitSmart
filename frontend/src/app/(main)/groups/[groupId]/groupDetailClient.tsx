@@ -3,13 +3,14 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Group, ProcessedMember, BalanceDetail, MemberWithDetails, DebtDetail } from '@/types';
+import { Group, ProcessedMember, BalanceDetail, MemberWithDetails, DebtDetail, SimplifiedTransaction } from '@/types';
 import { useAuth } from '@/lib/authContext';
 import ExpensesTab from './expensesTab';
 import MembersTab from './membersTab';   
 import { Button } from '@/component/ui/button';
 import DeleteGroupModal from './deleteGroupModal';
 import EditGroupModal from './editGroupModal';
+import { simplifyDebts } from '@/lib/utils';
 
 
 type Tab = 'expenses' | 'members'; // Aggiungiamo la nuova tab
@@ -25,7 +26,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   const { user: currentUser } = useAuth(); 
 
    const { data: processedData, isLoading, isError, error } = useQuery({
-    queryKey: ['group-debts-matrix', groupId],
+    queryKey: ['group-details-simplified', groupId],
     queryFn: async () => {
       if (!currentUser) return null;
 
@@ -37,7 +38,29 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         api.getGroupExpenses(groupId),
       ]);
       
-      // --- Logica di calcolo saldi (spostata in cima per chiarezza) ---
+       const directDebts = new Map<string, number>();
+      for (const [expense, participants] of expensesWithParticipants) {
+        for (const p of participants) {
+          if (p.user_id !== expense.paid_by) {
+            const key = `${p.user_id}-${expense.paid_by}`;
+            const amount = p.amount_due || 0;
+            directDebts.set(key, (directDebts.get(key) || 0) + amount);
+          }
+        }
+      }
+
+      // 2. Semplifica i debiti reciproci per ottenere i debiti netti
+      const netDebts = new Map<string, number>();
+      for (const [key, amount] of directDebts.entries()) {
+        const [from, to] = key.split('-');
+        const reverseKey = `${to}-${from}`;
+        const reverseAmount = directDebts.get(reverseKey) || 0;
+        
+        if (amount > reverseAmount) {
+            netDebts.set(key, amount - reverseAmount);
+        }
+      }
+      
       const netBalances = new Map<number, number>();
       for (const [expense, participants] of expensesWithParticipants) {
         for (const p of participants) {
@@ -46,53 +69,43 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         netBalances.set(expense.paid_by, (netBalances.get(expense.paid_by) || 0) + expense.total_amount);
       }
       
-      const adminIds = new Set(admins.map(a => a.user_id));
       const allUserDetails = await Promise.all(
         membersResponse.map(async m => ({...await api.getUserDetails(m.user_id), id: m.user_id}))
       );
       const userMap = new Map(allUserDetails.map(u => [u.id, u]));
 
-      // Costruiamo i dati finali per i membri
-       const finalMembers: ProcessedMember[] = allUserDetails.map(user => {
-        let netBalance = 0;
-        const debts: DebtDetail[] = [];
+      const membersWithNetBalance = allUserDetails.map(user => ({
+        ...user,
+        netBalance: netBalances.get(user.id) || 0,
+      }));
+      const simplifiedTransactions = simplifyDebts(membersWithNetBalance);
+      const adminIds = new Set(admins.map(a => a.user_id));
 
-        for (const [key, amount] of netDebts.entries()) {
-          const [fromId, toId] = key.split('-').map(Number);
-          
-          if (user.id === fromId) { // Lui è il debitore
-            netBalance -= amount;
-            debts.push({
-              otherMemberId: toId,
-              otherMemberName: userMap.get(toId)?.username || 'Sconosciuto',
-              amount: -amount,
-            });
-          } else if (user.id === toId) { // Lui è il creditore
-            netBalance += amount;
-            debts.push({
-              otherMemberId: fromId,
-              otherMemberName: userMap.get(fromId)?.username || 'Sconosciuto',
-              amount: amount,
-            });
-          }
-        }
-        
+           const finalMembers: ProcessedMember[] = allUserDetails.map(user => {
+        // Filtra le transazioni semplificate che coinvolgono questo utente
+        const relatedTransactions = simplifiedTransactions.filter(
+          tx => tx.fromId === user.id || tx.toId === user.id
+        );
+
         return {
           ...user,
           isAdmin: adminIds.has(user.id),
-          netBalance: netBalance,
-          debts: debts, // Assicurati che l'array `debts` sia qui
+          netBalance: netBalances.get(user.id) || 0,
+          // `debts` ora contiene le transazioni OTTIMIZZATE che lo riguardano
+          debts: relatedTransactions.map(tx => ({
+            // Trasformiamo i dati per la visualizzazione
+            otherMemberId: tx.fromId === user.id ? tx.toId : tx.fromId,
+            otherMemberName: tx.fromId === user.id ? tx.toName : tx.fromName,
+            // L'importo è negativo se PAGA, positivo se RICEVE
+            amount: tx.fromId === user.id ? -tx.amount : tx.amount,
+          })),
         };
       });
-
-      // Calcoliamo il saldo totale dell'utente corrente
-      const myTotalBalance = netBalances.get(currentUser.id) || 0;
 
       return {
         group,
         members: finalMembers,
-        expenses: expensesWithParticipants,
-        totalBalance: myTotalBalance, // Aggiunto di nuovo
+        expenses: expensesWithParticipants, // Aggiungi questa riga
         isCurrentUserAdmin: adminIds.has(currentUser.id),
       };
     },
@@ -169,8 +182,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
             groupId={groupId}
             initialMembers={processedData.members}
             isCurrentUserAdmin={processedData.isCurrentUserAdmin}
-            totalBalance={processedData.totalBalance} 
-          />
+                      />
         )}
       </div>
       

@@ -110,3 +110,11 @@ export interface MemberWithDetails {
   netBalance: number; 
   debts: DebtDetail[];
 }
+
+export interface SimplifiedTransaction {
+  fromId: number;
+  fromName: string;
+  toId: number;
+  toName: string;
+  amount: number;
+}
