@@ -458,7 +458,7 @@ fn demote_admin(gid: i32, uid: i32, user: User) -> Result<(), Status> {
     let result = diesel::delete(
         group_administrators
             .filter(group_id.eq(gid))
-            .filter(user_id.eq(user.id)),
+            .filter(user_id.eq(uid)),
     )
     .execute(&mut conn);
 

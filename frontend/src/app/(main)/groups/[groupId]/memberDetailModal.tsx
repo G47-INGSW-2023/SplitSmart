@@ -21,7 +21,7 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
   const promoteMutation = useMutation({
     mutationFn: () => api.promoteToAdmin(groupId, member.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
       alert(`${member.username} è stato promosso ad amministratore!`);
       onClose();
     },
@@ -31,7 +31,7 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
   const removeMutation = useMutation({
     mutationFn: () => api.removeMemberFromGroup(groupId, member.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
       alert(`${member.username} è stato rimosso dal gruppo.`);
       onClose();
     },
@@ -41,7 +41,7 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
   const demoteMutation = useMutation({
     mutationFn: () => api.demoteAdmin(groupId, member.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-details-processed', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
       alert(`I privilegi di admin sono stati rimossi da ${member.username}.`);
       onClose();
     },
