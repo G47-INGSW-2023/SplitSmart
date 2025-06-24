@@ -37,11 +37,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 text-white flex flex-col p-4">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-center">SmartSplit</h2>
+          <h2 className="text-2xl font-bold text-center">SplitSmart</h2>
         </div>
         <nav className="flex-grow">
           <ul className="space-y-2">
@@ -66,7 +66,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </ul>
         </nav>
         {/* Pulsante di Logout */}
-        <div className="mt-auto">
+         <div className="mt-4">
           <button
             onClick={async () => {
               await logout();
@@ -74,11 +74,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             }}
             className="w-full flex items-center p-3 rounded-lg text-left hover:bg-red-700 transition-colors"
           >
+            {/* Puoi aggiungere un'icona qui se vuoi */}
             Logout
           </button>
         </div>
       </aside>
-
       {/* Contenuto principale */}
       <main className="flex-1 p-8 overflow-y-auto">{children}</main>
     </div>

@@ -1,37 +1,113 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { User } from '@/types';
+// Rimuoviamo `useMemo`, `simplifyDebts`, `SimplifiedTransaction` che non servono più
+import { useState } from 'react';
+import { useAuth } from '@/lib/authContext';
+import { ProcessedMember, ExpenseWithParticipants, MemberWithDetails } from '@/types';
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
-import { useState } from 'react';
-import MemberDetailModal from './memberDetailModal'; // Importiamo il nuovo modale
+import MemberDetailModal from './memberDetailModal';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 interface MembersTabProps {
-  groupId: number;
+   groupId: number;
+  initialMembers: ProcessedMember[];
+  isCurrentUserAdmin: boolean;
 }
 
-export default function MembersTab({ groupId }: MembersTabProps) {
-  const [inviteEmail, setInviteEmail] = useState('');
+const MemberRow = ({ member, onAdminActionsClick }: { 
+  member: ProcessedMember,
+  onAdminActionsClick: (member: ProcessedMember) => void 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false); // Stato di espansione locale
+  const { user: currentUser } = useAuth();
   
-  const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  const isSelf = member.id === currentUser?.id;
+  const balance = member.netBalance;
+  const balanceColor = balance > 0.01 ? 'text-green-600' : balance < -0.01 ? 'text-red-600' : 'text-gray-500';
 
+  return (
+  <li className="bg-white rounded-lg shadow-sm transition-all duration-300 overflow-hidden">
+    {/* --- PARTE SUPERIORE COMPLETAMENTE RISTRUTTURATA --- */}
+    <div className="w-full flex items-stretch text-left">
+      
+      {/* 1. AREA SINISTRA CLICCABILE (per Azioni Admin) */}
+      <button
+        onClick={() => onAdminActionsClick(member)}
+        disabled={isSelf}
+        // `flex-grow` la fa espandere. `p-4` crea l'area cliccabile.
+        // `items-center` e `justify-start` allineano il contenuto a sinistra.
+        className="flex-grow p-4 flex items-center justify-start gap-2 hover:bg-gray-50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+      >
+        <span className="font-medium text-gray-900">{member.username}</span>
+        {isSelf && <span className="font-normal text-blue-600">(Tu)</span>}
+        {member.isAdmin && <span className="text-xs font-semibold text-white bg-blue-500 px-2 py-0.5 rounded-full">Admin</span>}
+      </button>
+      
+      {/* 2. AREA DESTRA CLICCABILE (per espandere/collassare) */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        // `flex-shrink-0` impedisce al pulsante di rimpicciolirsi.
+        // `w-48` (o un altro valore) gli dà una larghezza fissa.
+        // `p-4` crea l'area cliccabile.
+        // `flex flex-col items-end` allinea il testo a destra.
+        className="flex-shrink-0 w-48 p-4 flex flex-col items-end justify-center hover:bg-gray-50 transition-colors border-l border-gray-200"
+      >
+        {Math.abs(balance) < 0.01 ? (
+          <p className="text-gray-500 font-medium">In pari</p>
+        ) : (
+          <>
+            <p className={`font-bold text-lg ${balanceColor}`}>
+              {Math.abs(balance).toFixed(2)} €
+            </p>
+            <p className={`text-xs ${balanceColor}`}>
+              {balance > 0 ? 'Deve ricevere' : 'Deve dare'}
+            </p>
+          </>
+        )}
+      </button>
+    </div>
+
+    {/* Dettaglio Espandibile (invariato) */}
+    {isExpanded && (
+      <div className="border-t border-gray-200 bg-gray-50/50 p-4 space-y-2">
+        <h4 className="font-semibold text-sm text-gray-700">Dettaglio Saldo:</h4>
+        {member.debts.length > 0 ? (
+          <ul className="text-sm space-y-1">
+            {member.debts.map(debt => (
+              <li key={debt.otherMemberId} className="flex justify-between items-center">
+                <span className="text-gray-700">
+                  {debt.amount > 0 ? `Riceve da ${debt.otherMemberName}` : `Paga a ${debt.otherMemberName}`}
+                </span>
+                <span className={`font-medium ${debt.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {Math.abs(debt.amount).toFixed(2)} €
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-center text-gray-500">In pari con tutti i membri del gruppo.</p>
+        )}
+      </div>
+    )}
+  </li>
+);
+}
+export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin }: MembersTabProps) {
+  const { user: currentUser } = useAuth();
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [selectedMember, setSelectedMember] = useState<ProcessedMember | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: members, isLoading, isError } = useQuery<User[]>({
-    queryKey: ['members', groupId],
-    queryFn: () => api.getGroupMembers(groupId),
-  });
-
+  // La logica di invito rimane invariata
   const inviteMutation = useMutation({
-    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),     
-    
+    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
     onSuccess: () => {
       alert('Invito inviato con successo!'); 
       setInviteEmail('');
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
     },
-    
     onError: (error) => {
       alert(`Errore nell'invio dell'invito: ${error.message}`);
     }
@@ -43,65 +119,52 @@ export default function MembersTab({ groupId }: MembersTabProps) {
     inviteMutation.mutate(inviteEmail.trim());
   };
 
-
-  if (isLoading) return <div>Caricamento membri...</div>;
-  if (isError) return <div>Errore nel caricamento dei membri.</div>;
-
   return (
-    <div className="space-y-8">
-      {/* Sezione Invito */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
-        <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
-          <Input 
-            type="email" 
-            placeholder="email@esempio.com" 
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            required
-            className="w-full text-gray-500" 
-            disabled={inviteMutation.isPending}
-          />
-          <Button 
-            type="submit" 
-            disabled={inviteMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            {inviteMutation.isPending ? 'Invio in corso...' : 'Invia Invito'}
-          </Button>
-        </form>
-        {/* Potremmo mostrare un errore direttamente sotto il form, ma l'alert è sufficiente per ora */}
-      </div>
+    <div className="space-y-8">   
+      {/* 2. Sezione Invito (mantenuta) */}
+      {isCurrentUserAdmin && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
+          <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
+            <Input 
+              type="email" 
+              placeholder="email@esempio.com" 
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+              className="w-full text-gray-500" 
+              disabled={inviteMutation.isPending}
+            />
+            <Button 
+              type="submit" 
+              disabled={inviteMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              {inviteMutation.isPending ? 'Invio...' : 'Invia Invito'}
+            </Button>
+          </form>
+        </div>
+      )}
 
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Membri del gruppo</h3>
-        <ul className="space-y-2">
-          {members?.map(member => (
-            <li key={member.id}>
-              <button
-                onClick={() => setSelectedMember(member)}
-                className="w-full bg-white p-4 rounded-lg shadow-sm flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-gray-900">{member.username}</span>
-                  <span className="text-sm text-gray-500">{member.email}</span>
-                </div>
-                {member.isAdmin && (
-                  <span className="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">
-                    Admin
-                  </span>
-                )}
-              </button>
-            </li>
+       <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Panoramica Saldi Membri</h3>
+        <ul className="space-y-3">
+          {initialMembers.map(member => (
+            <MemberRow
+                key={member.id}
+                member={member}
+                onAdminActionsClick={setSelectedMember}
+            />
           ))}
         </ul>
       </div>
-
-      {/* Il modale di dettaglio membro. Viene mostrato solo se `selectedMember` non è null. */}
+      {/* 4. Modale di Dettaglio (mantenuto) */}
       {selectedMember && (
         <MemberDetailModal
           member={selectedMember}
           groupId={groupId}
           onClose={() => setSelectedMember(null)}
+          isCurrentUserAdmin={isCurrentUserAdmin}
         />
       )}
     </div>

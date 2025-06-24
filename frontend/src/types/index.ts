@@ -17,7 +17,18 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  isAdmin?: boolean;
+}
+
+export interface UserInfo {
+    username: string;
+    email: string;
+    registration_date: string;
+    last_login: string | null;
+}
+
+export interface GroupMember {
+  group_id: number;
+  user_id: number;
 }
 
 // Corrisponde alla struct `Group` in models.rs
@@ -38,8 +49,24 @@ export interface Expense {
   id: number;
   desc: string;
   total_amount: number;
-  paid_by: number; // ID dell'utente che ha pagato
   creation_date: string;
+  paid_by: number;
+  group_id: number | null;
+}
+
+export interface ExpenseParticipation {
+  expense_id: number;
+  user_id: number;
+  amount_due: number | null;
+}
+
+export type ExpenseWithParticipants = [Expense, ExpenseParticipation[]];
+
+export interface AddExpenseData {
+  desc: string;
+  total_amount: number;
+  paid_by: number;
+  division: [number, number][];
 }
 
 // Per invitare un utente
@@ -56,4 +83,38 @@ export interface GroupInvite {
   invite_date: string;
   invite_status: "PENDING" | "ACCEPTED" | "REJECTED" | null;
   optional_message: string | null;
+}
+
+export interface ProcessedMember extends User {
+  isAdmin: boolean;
+  netBalance: number; // Il suo saldo netto totale nel gruppo
+  debts: DebtDetail[]; // La lista dettagliata dei suoi debiti/crediti
+}
+
+export interface BalanceDetail {
+  otherUserName: string;
+  amount: number; 
+}
+
+export interface DebtDetail {
+  otherMemberId: number;
+  otherMemberName: string;
+  amount: number;
+}
+
+export interface MemberWithDetails {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  netBalance: number; 
+  debts: DebtDetail[];
+}
+
+export interface SimplifiedTransaction {
+  fromId: number;
+  fromName: string;
+  toId: number;
+  toName: string;
+  amount: number;
 }

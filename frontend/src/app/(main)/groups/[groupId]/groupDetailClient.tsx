@@ -1,47 +1,145 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Group } from '@/types';
+import { Group, ProcessedMember, BalanceDetail, MemberWithDetails, DebtDetail, SimplifiedTransaction } from '@/types';
+import { useAuth } from '@/lib/authContext';
 import ExpensesTab from './expensesTab';
 import MembersTab from './membersTab';   
 import { Button } from '@/component/ui/button';
 import DeleteGroupModal from './deleteGroupModal';
+import EditGroupModal from './editGroupModal';
+import { simplifyDebts } from '@/lib/utils';
 
-type Tab = 'expenses' | 'members'; // Definiamo i tipi di tab possibili
+
+type Tab = 'expenses' | 'members'; // Aggiungiamo la nuova tab
 
 interface GroupDetailClientProps {
   groupId: number;
 }
 
 export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
-  // Stato per tenere traccia della tab attiva
   const [activeTab, setActiveTab] = useState<Tab>('expenses');
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const { user: currentUser } = useAuth(); 
 
-  const isCurrentUserAdmin = true; 
+   const { data: processedData, isLoading, isError, error } = useQuery({
+    queryKey: ['group-details-simplified', groupId],
+    queryFn: async () => {
+      if (!currentUser) return null;
 
-  const { data: group, isLoading, isError, error } = useQuery<Group>({
-    queryKey: ['group', groupId],
-    queryFn: () => api.getGroupById(groupId),
-    enabled: !isNaN(groupId),
+      // Corretto il nome della variabile in `expensesWithParticipants`
+      const [group, membersResponse, admins, expensesWithParticipants] = await Promise.all([
+        api.getGroupById(groupId),
+        api.getGroupMembers(groupId),
+        api.getGroupAdmins(groupId),
+        api.getGroupExpenses(groupId),
+      ]);
+      
+       const directDebts = new Map<string, number>();
+      for (const [expense, participants] of expensesWithParticipants) {
+        for (const p of participants) {
+          if (p.user_id !== expense.paid_by) {
+            const key = `${p.user_id}-${expense.paid_by}`;
+            const amount = p.amount_due || 0;
+            directDebts.set(key, (directDebts.get(key) || 0) + amount);
+          }
+        }
+      }
+
+      // 2. Semplifica i debiti reciproci per ottenere i debiti netti
+      const netDebts = new Map<string, number>();
+      for (const [key, amount] of directDebts.entries()) {
+        const [from, to] = key.split('-');
+        const reverseKey = `${to}-${from}`;
+        const reverseAmount = directDebts.get(reverseKey) || 0;
+        
+        if (amount > reverseAmount) {
+            netDebts.set(key, amount - reverseAmount);
+        }
+      }
+      
+      const netBalances = new Map<number, number>();
+      for (const [expense, participants] of expensesWithParticipants) {
+        for (const p of participants) {
+          netBalances.set(p.user_id, (netBalances.get(p.user_id) || 0) - (p.amount_due || 0));
+        }
+        netBalances.set(expense.paid_by, (netBalances.get(expense.paid_by) || 0) + expense.total_amount);
+      }
+      
+      const allUserDetails = await Promise.all(
+        membersResponse.map(async m => ({...await api.getUserDetails(m.user_id), id: m.user_id}))
+      );
+      const userMap = new Map(allUserDetails.map(u => [u.id, u]));
+
+      const membersWithNetBalance = allUserDetails.map(user => ({
+        ...user,
+        netBalance: netBalances.get(user.id) || 0,
+      }));
+      const simplifiedTransactions = simplifyDebts(membersWithNetBalance);
+      const adminIds = new Set(admins.map(a => a.user_id));
+
+           const finalMembers: ProcessedMember[] = allUserDetails.map(user => {
+        // Filtra le transazioni semplificate che coinvolgono questo utente
+        const relatedTransactions = simplifiedTransactions.filter(
+          tx => tx.fromId === user.id || tx.toId === user.id
+        );
+
+        return {
+          ...user,
+          isAdmin: adminIds.has(user.id),
+          netBalance: netBalances.get(user.id) || 0,
+          // `debts` ora contiene le transazioni OTTIMIZZATE che lo riguardano
+          debts: relatedTransactions.map(tx => ({
+            // Trasformiamo i dati per la visualizzazione
+            otherMemberId: tx.fromId === user.id ? tx.toId : tx.fromId,
+            otherMemberName: tx.fromId === user.id ? tx.toName : tx.fromName,
+            // L'importo è negativo se PAGA, positivo se RICEVE
+            amount: tx.fromId === user.id ? -tx.amount : tx.amount,
+          })),
+        };
+      });
+
+      return {
+        group,
+        members: finalMembers,
+        expenses: expensesWithParticipants, // Aggiungi questa riga
+        isCurrentUserAdmin: adminIds.has(currentUser.id),
+      };
+    },
+    enabled: !isNaN(groupId) && !!currentUser,
   });
 
   if (isLoading) return <div>Caricamento...</div>;
   if (isError) return <div className="text-red-500">Errore: {error.message}</div>;
+  if (!processedData) return <div>Dati non disponibili.</div>;
 
   return (
     <div className="space-y-6">
        {/* Intestazione con pulsante Impostazioni/Elimina */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{group?.group_name}</h1>
-          <p className="text-gray-500 mt-1">{group?.desc || 'Nessuna descrizione per questo gruppo.'}</p>
+          <h1 className="text-3xl font-bold text-gray-800">{processedData.group.group_name}</h1>
+          <p className="text-gray-500 mt-1">{processedData.group.desc}</p>
         </div>
-        {isCurrentUserAdmin && (
-          <div className="flex-shrink-0 ml-4">
-            <Button variant="destructive" onClick={() => setDeleteModalOpen(true)} className="w-auto"> Elimina </Button>
+        {processedData.isCurrentUserAdmin && (
+          <div className="flex-shrink-0 ml-4 flex gap-2">
+            <Button
+              variant="secondary" // Usiamo uno stile meno "pericoloso"
+              onClick={() => setEditModalOpen(true)}
+              className="w-auto"
+            >
+              Modifica
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteModalOpen(true)}
+              className="w-auto"
+            >
+              Elimina
+            </Button>
           </div>
         )}
       </div>
@@ -73,15 +171,33 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
 
       {/* Contenuto delle Tab */}
       <div>
-        {activeTab === 'expenses' && <ExpensesTab groupId={groupId} />}
-        {activeTab === 'members' && <MembersTab groupId={groupId} />}
+        {activeTab === 'expenses' && (
+          <ExpensesTab 
+            groupId={groupId} 
+            initialExpenses={processedData.expenses} 
+          />
+        )}
+        {activeTab === 'members' && (
+          <MembersTab
+            groupId={groupId}
+            initialMembers={processedData.members}
+            isCurrentUserAdmin={processedData.isCurrentUserAdmin}
+                      />
+        )}
       </div>
-
-       <DeleteGroupModal
+      
+      <EditGroupModal
+        isOpen={isEditModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        group={processedData.group}
+      />
+      
+      {/* Modale di cancellazione */}
+      <DeleteGroupModal
         isOpen={isDeleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         groupId={groupId}
-        groupName={group?.group_name || ''}
+        groupName={processedData.group.group_name || ''}
       />
     </div>
   );
