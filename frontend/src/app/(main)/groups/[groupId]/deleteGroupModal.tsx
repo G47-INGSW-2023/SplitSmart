@@ -20,26 +20,16 @@ export default function DeleteGroupModal({ isOpen, onClose, groupId, groupName }
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteGroup(groupId),
     onSuccess: () => {
-      // Se la cancellazione ha successo:
-      // 1. Invalidiamo la query 'groups' per aggiornare la lista nella pagina principale.
       queryClient.invalidateQueries({ queryKey: ['groups'] });
-      
-      // 2. Reindirizziamo l'utente alla pagina dei gruppi.
       router.push('/groups');
-      
-      // La chiusura del modale non è più necessaria perché cambiamo pagina,
-      // ma è buona norma chiamarla.
       onClose();
     },
     onError: (error) => {
-      // In un'app reale, useremmo un sistema di notifiche "toast"
       alert(`Errore: ${error.message}`);
     }
   });
-
-  if (!isOpen) {
-    return null;
-  }
+  
+  if (!isOpen) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Elimina Gruppo">

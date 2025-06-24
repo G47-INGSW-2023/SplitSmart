@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Group, ProcessedMember, BalanceDetail, MemberWithDetails, DebtDetail, SimplifiedTransaction } from '@/types';
+import { ProcessedMember} from '@/types';
 import { useAuth } from '@/lib/authContext';
 import ExpensesTab from './expensesTab';
 import MembersTab from './membersTab';   
@@ -13,7 +13,7 @@ import EditGroupModal from './editGroupModal';
 import { simplifyDebts } from '@/lib/utils';
 
 
-type Tab = 'expenses' | 'members'; // Aggiungiamo la nuova tab
+type Tab = 'expenses' | 'members';
 
 interface GroupDetailClientProps {
   groupId: number;
@@ -25,12 +25,11 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const { user: currentUser } = useAuth(); 
 
-   const { data: processedData, isLoading, isError, error } = useQuery({
+  const { data: processedData, isLoading, isError, error } = useQuery({
     queryKey: ['group-details-simplified', groupId],
     queryFn: async () => {
       if (!currentUser) return null;
 
-      // Corretto il nome della variabile in `expensesWithParticipants`
       const [group, membersResponse, admins, expensesWithParticipants] = await Promise.all([
         api.getGroupById(groupId),
         api.getGroupMembers(groupId),
@@ -38,7 +37,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         api.getGroupExpenses(groupId),
       ]);
       
-       const directDebts = new Map<string, number>();
+      const directDebts = new Map<string, number>();
       for (const [expense, participants] of expensesWithParticipants) {
         for (const p of participants) {
           if (p.user_id !== expense.paid_by) {
@@ -49,16 +48,13 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         }
       }
 
-      // 2. Semplifica i debiti reciproci per ottenere i debiti netti
       const netDebts = new Map<string, number>();
       for (const [key, amount] of directDebts.entries()) {
         const [from, to] = key.split('-');
         const reverseKey = `${to}-${from}`;
         const reverseAmount = directDebts.get(reverseKey) || 0;
         
-        if (amount > reverseAmount) {
-            netDebts.set(key, amount - reverseAmount);
-        }
+        if (amount > reverseAmount) netDebts.set(key, amount - reverseAmount);
       }
       
       const netBalances = new Map<number, number>();
@@ -78,11 +74,11 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         ...user,
         netBalance: netBalances.get(user.id) || 0,
       }));
+
       const simplifiedTransactions = simplifyDebts(membersWithNetBalance);
       const adminIds = new Set(admins.map(a => a.user_id));
 
-           const finalMembers: ProcessedMember[] = allUserDetails.map(user => {
-        // Filtra le transazioni semplificate che coinvolgono questo utente
+      const finalMembers: ProcessedMember[] = allUserDetails.map(user => {
         const relatedTransactions = simplifiedTransactions.filter(
           tx => tx.fromId === user.id || tx.toId === user.id
         );
@@ -91,12 +87,9 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
           ...user,
           isAdmin: adminIds.has(user.id),
           netBalance: netBalances.get(user.id) || 0,
-          // `debts` ora contiene le transazioni OTTIMIZZATE che lo riguardano
           debts: relatedTransactions.map(tx => ({
-            // Trasformiamo i dati per la visualizzazione
             otherMemberId: tx.fromId === user.id ? tx.toId : tx.fromId,
             otherMemberName: tx.fromId === user.id ? tx.toName : tx.fromName,
-            // L'importo è negativo se PAGA, positivo se RICEVE
             amount: tx.fromId === user.id ? -tx.amount : tx.amount,
           })),
         };
@@ -105,7 +98,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
       return {
         group,
         members: finalMembers,
-        expenses: expensesWithParticipants, // Aggiungi questa riga
+        expenses: expensesWithParticipants, 
         isCurrentUserAdmin: adminIds.has(currentUser.id),
       };
     },
@@ -118,7 +111,6 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
 
   return (
     <div className="space-y-6">
-       {/* Intestazione con pulsante Impostazioni/Elimina */}
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{processedData.group.group_name}</h1>
@@ -127,7 +119,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         {processedData.isCurrentUserAdmin && (
           <div className="flex-shrink-0 ml-4 flex gap-2">
             <Button
-              variant="secondary" // Usiamo uno stile meno "pericoloso"
+              variant="secondary"
               onClick={() => setEditModalOpen(true)}
               className="w-auto"
             >
@@ -143,7 +135,6 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
           </div>
         )}
       </div>
-      {/* Selettore Tab */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-6" aria-label="Tabs">
           <button
@@ -169,7 +160,6 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         </nav>
       </div>
 
-      {/* Contenuto delle Tab */}
       <div>
         {activeTab === 'expenses' && (
           <ExpensesTab 
@@ -182,7 +172,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
             groupId={groupId}
             initialMembers={processedData.members}
             isCurrentUserAdmin={processedData.isCurrentUserAdmin}
-                      />
+          />
         )}
       </div>
       
@@ -192,7 +182,6 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         group={processedData.group}
       />
       
-      {/* Modale di cancellazione */}
       <DeleteGroupModal
         isOpen={isDeleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}

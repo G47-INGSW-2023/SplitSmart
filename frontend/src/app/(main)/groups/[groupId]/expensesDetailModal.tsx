@@ -13,7 +13,6 @@ interface ExpenseDetailModalProps {
   groupId: number;
 }
 
-// Un piccolo componente per mostrare lo stato di caricamento dei nomi
 const DetailRowSkeleton = () => (
   <div className="flex justify-between items-center py-2 animate-pulse">
     <div className="h-4 bg-gray-200 rounded w-2/5"></div>
@@ -26,32 +25,24 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
   const { user: currentUser } = useAuth();
 
   const { data: members, isLoading: isLoadingMembers } = useQuery<User[]>({
-    queryKey: ['members-for-details', groupId], // Chiave diversa per non confliggere
+    queryKey: ['members-for-details', groupId],
     queryFn: async () => {
       const groupMembers = await api.getGroupMembers(groupId);
       const detailedMembersPromises: Promise<User>[] = groupMembers.map(async (member) => {
         const userDetails = await api.getUserDetails(member.user_id);
-        return {
-          id: member.user_id,
-          username: userDetails.username,
-          email: userDetails.email,
-        };
+        return { id: member.user_id, username: userDetails.username, email: userDetails.email };
       });
       return Promise.all(detailedMembersPromises);
     },
     enabled: isOpen,
   });
 
-
-  // Creiamo una mappa di ID utente -> Nome utente per una ricerca facile e veloce
   const memberIdToNameMap = new Map(members?.map(m => [m.id, m.username]));
-  const payerName = (memberIdToNameMap.get(expense.paid_by) || `Utente ID ${expense.paid_by}`) + 
-                    (currentUser?.id === expense.paid_by ? ' (Tu)' : '');
+  const payerName = (memberIdToNameMap.get(expense.paid_by) || `Utente ID ${expense.paid_by}`) + (currentUser?.id === expense.paid_by ? ' (Tu)' : '');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Dettagli: ${expense.desc}`}>
       <div className="space-y-4">
-        {/* Riepilogo Principale */}
         <div className="p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Importo Totale</span>
@@ -67,16 +58,11 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
           </div>
         </div>
         
-        {/* Dettaglio Divisione */}
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">Divisione della spesa</h4>
           <div className="border rounded-lg p-2 space-y-1">
             {isLoadingMembers ? (
-              // Mostra uno scheletro di caricamento mentre recuperiamo i nomi
-              <>
-                <DetailRowSkeleton />
-                <DetailRowSkeleton />
-              </>
+              <> <DetailRowSkeleton /> <DetailRowSkeleton /> </>
             ) : (
               // Mostra i dettagli reali
               participants.map(p => {
