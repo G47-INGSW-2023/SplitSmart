@@ -13,13 +13,8 @@ export default function GroupsPage() {
       <div className="flex justify-between items-center">
         <Button onClick={() => setCreateModalOpen(true)}>Crea Nuovo Gruppo</Button>
       </div>
-      
-      <GroupList />
-
-      <CreateGroupModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setCreateModalOpen(false)} 
-      />
+      <GroupList/>
+      <CreateGroupModal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)}/>
     </div>
   );
 }

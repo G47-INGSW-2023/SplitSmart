@@ -12,17 +12,14 @@ import { Textarea } from '@/component/ui/textarea';
 interface EditGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  group: Group; // Riceve i dati attuali del gruppo
+  group: Group;
 }
 
 export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModalProps) {
   const queryClient = useQueryClient();
-  
-  // Inizializziamo lo stato del form con i dati attuali del gruppo
   const [name, setName] = useState(group.group_name);
   const [description, setDescription] = useState(group.desc || '');
 
-  // Sincronizza lo stato del form se il gruppo cambia (utile in casi complessi)
   useEffect(() => {
     if (group) {
       setName(group.group_name);
@@ -31,10 +28,8 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
   }, [group]);
 
   const updateMutation = useMutation({
-    mutationFn: (updatedData: { name: string, description?: string }) => 
-      api.updateGroup(group.id, updatedData),
+    mutationFn: (updatedData: { name: string, description?: string }) => api.updateGroup(group.id, updatedData),
     onSuccess: () => {
-      // Invalidiamo la query per aggiornare l'intestazione della pagina
       queryClient.invalidateQueries({ queryKey: ['group-details-processed', group.id] });
       alert('Gruppo aggiornato con successo!');
       onClose();
@@ -49,10 +44,8 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
     if (!name.trim()) return;
 
     const dataToSubmit: { name: string; description?: string } = { name: name.trim() };
-    if (description.trim()) {
-      dataToSubmit.description = description.trim();
-    }
-    
+    if (description.trim()) dataToSubmit.description = description.trim();
+  
     updateMutation.mutate(dataToSubmit);
   };
 
@@ -60,9 +53,7 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
     <Modal isOpen={isOpen} onClose={onClose} title="Modifica Gruppo">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="edit-group-name" className="block text-sm font-medium text-gray-700 mb-1">
-            Nome del gruppo
-          </label>
+          <label htmlFor="edit-group-name" className="block text-sm font-medium text-gray-700 mb-1"> Nome del gruppo </label>
           <Input 
             id="edit-group-name" 
             value={name} 
@@ -73,9 +64,7 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
           />
         </div>
         <div>
-          <label htmlFor="edit-group-description" className="block text-sm font-medium text-gray-700 mb-1">
-            Descrizione (opzionale)
-          </label>
+          <label htmlFor="edit-group-description" className="block text-sm font-medium text-gray-700 mb-1"> Descrizione (opzionale) </label>
           <Textarea 
             id="edit-group-description" 
             value={description} 

@@ -1,7 +1,6 @@
 'use client';
 
-import { api } from '@/lib/api';
-import { Expense, ExpenseWithParticipants } from '@/types';
+import { ExpenseWithParticipants } from '@/types';
 import { Button } from '@/component/ui/button';
 import { useState } from 'react';
 import AddExpenseModal from './addExpenseModal'; 
@@ -31,41 +30,36 @@ export default function ExpensesTab({ groupId, initialExpenses }: ExpensesTabPro
             let userFinancialStatus = {
               text: 'Non sei coinvolto',
               amount: 0,
-              color: 'text-gray-500' // Grigio di default
+              color: 'text-gray-500' 
             };
             
             if (currentUser) {
               const myParticipation = participants.find(p => p.user_id === currentUser.id);
 
               if (expense.paid_by === currentUser.id) {
-                // Ho pagato io la spesa
-                // Calcolo quanto mi devono gli altri (totale - la mia quota)
                 const myShare = myParticipation?.amount_due || 0;
                 const totalOwedToMe = expense.total_amount - myShare;
                 userFinancialStatus = {
                   text: 'Ti devono',
                   amount: totalOwedToMe,
-                  color: 'text-green-600' // Verde
+                  color: 'text-green-600' 
                 };
               } else if (myParticipation) {
-                // Non ho pagato io, ma sono coinvolto
                 const amountIOwe = myParticipation.amount_due || 0;
                 userFinancialStatus = {
                   text: 'Devi dare',
                   amount: amountIOwe,
-                  color: 'text-red-600' // Rosso
+                  color: 'text-red-600'
                 };
               }
             }
             return (
-              // 3. Rendi l'intera riga un bottone cliccabile
               <li key={expense.id}>
                 <button
                   onClick={() => setSelectedExpense(expenseItem)}
                   className="w-full text-left bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex justify-between items-center">
-                    {/* Colonna sinistra con Descrizione e Data */}
                     <div>
                       <p className="font-semibold text-gray-800">{expense.desc}</p>
                       <p className="text-sm text-gray-500 mt-1">
@@ -73,7 +67,6 @@ export default function ExpensesTab({ groupId, initialExpenses }: ExpensesTabPro
                       </p>
                     </div>
 
-                    {/* Colonna destra con stato finanziario */}
                     <div className="text-right">
                       <p className={`text-sm ${userFinancialStatus.color}`}>
                         {userFinancialStatus.text}

@@ -7,7 +7,6 @@ import { AddExpenseData, User } from '@/types';
 import { Modal } from '@/component/ui/modal';
 import { Input } from '@/component/ui/input';
 import { Button } from '@/component/ui/button';
-import { Textarea } from '@/component/ui/textarea';
 import { useAuth } from '@/lib/authContext';
 
 interface AddExpenseModalProps {
@@ -19,7 +18,7 @@ interface AddExpenseModalProps {
 type DivisionType = 'equal' | 'manual';
 
 export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpenseModalProps) {
-   const [description, setDescription] = useState('');
+  const [description, setDescription] = useState('');
   const [totalAmount, setTotalAmount] = useState<number | 0>(0);
   const [paidById, setPaidById] = useState<number | null>(null);
   const [divisionType, setDivisionType] = useState<DivisionType>('equal');
@@ -29,25 +28,20 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-
-   const { data: members, isLoading: isLoadingMembers } = useQuery<User[]>({
+  const { data: members, isLoading: isLoadingMembers } = useQuery<User[]>({
     queryKey: ['members-for-expense', groupId],
     queryFn: async () => {
       const groupMembers = await api.getGroupMembers(groupId);
       const detailedMembersPromises = groupMembers.map(async (member) => {
         const userDetails = await api.getUserDetails(member.user_id);
-        return {
-          id: member.user_id,
-          username: userDetails.username,
-          email: userDetails.email,
-        };
+        return { id: member.user_id, username: userDetails.username, email: userDetails.email };
       });
       return Promise.all(detailedMembersPromises);
     },
     enabled: isOpen,
   });
 
-   const addExpenseMutation = useMutation({
+  const addExpenseMutation = useMutation({
     mutationFn: (data: AddExpenseData) => api.addExpense(groupId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId]});
@@ -59,20 +53,15 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
     }
   });
 
-   const { manualSum, totalIsCorrect } = useMemo(() => {
+  const { manualSum, totalIsCorrect } = useMemo(() => {
     const numericTotal = Number(totalAmount) || 0;
     const sum = Object.values(manualAmounts).reduce((acc, amount) => acc + (Number(amount) || 0), 0);
-    return {
-      manualSum: sum,
-      totalIsCorrect: numericTotal > 0 && Math.abs(sum - numericTotal) < 0.01
-    };
+    return { manualSum: sum, totalIsCorrect: numericTotal > 0 && Math.abs(sum - numericTotal) < 0.01 };
   }, [manualAmounts, totalAmount]);
 
-  // Effetto per impostare il pagatore di default e resettare il form
   useEffect(() => {
     if (isOpen && currentUser && members) {
       setPaidById(currentUser.id);
-      // Seleziona tutti i membri di default per la divisione equa
       setSelectedMembers(new Set(members.map(m => m.id)));
     }
 
@@ -97,16 +86,17 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
 
     if (divisionType === 'equal') {
       if (selectedMembers.size === 0) return alert("Seleziona almeno un membro per la divisione.");
+
       const amountPerPerson = numericTotalAmount / selectedMembers.size;
       division = Array.from(selectedMembers).map(memberId => [memberId, parseFloat(amountPerPerson.toFixed(2))]);
-      // Correzione per arrotondamento: assegna i centesimi rimasti al primo partecipante
       const sumAfterRounding = division.reduce((sum, [, amount]) => sum + amount, 0);
       const remainder = numericTotalAmount - sumAfterRounding;
-      if (division.length > 0) {
-        division[0][1] += remainder;
-      }
-    } else { // 'manual'
+      
+      if (division.length > 0) division[0][1] += remainder;
+
+    } else {
       if (!totalIsCorrect) return alert("La somma delle parti non corrisponde all'importo totale.");
+      
       division = Object.entries(manualAmounts)
         .filter(([, amount]) => Number(amount) > 0)
         .map(([userId, amount]) => [Number(userId), Number(amount) as number]);
@@ -131,12 +121,11 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi una nuova spesa">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Campi Principali */}
         <div>
           <label htmlFor="exp-desc" className="text-black">Descrizione</label>
           <Input id="exp-desc"  className="text-gray-500" placeholder="Inserisci una descrizione" value={description} onChange={e => setDescription(e.target.value)} required />
         </div>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="exp-amount" className="text-black">Importo Totale (€)</label>
             <Input id="exp-amount" type="number"  className="text-gray-500" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value) || 0)} required min="0.01" step="0.01" />
@@ -151,7 +140,6 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
               required
               className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500"
             >
-              {/* Opzione disabilitata come placeholder */}
               <option value="" disabled>Seleziona un membro</option>
               {members?.map(member => (
                 <option key={member.id} value={member.id}>
@@ -161,16 +149,15 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
             </select>
           </div>
         </div>
-        {/* Selettore Tipo di Divisione */}
+
         <div className="flex gap-4 border-b pb-2">
           <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
           <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
         </div>
 
-        {/* Lista Membri */}
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {isLoadingMembers && <p>Caricamento membri...</p>}
-          
+
           {divisionType === 'equal' && members?.map(member => (
             <div key={member.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
               <input type="checkbox" id={`member-${member.id}`} checked={selectedMembers.has(member.id)} onChange={() => handleToggleMember(member.id)} />
@@ -197,7 +184,6 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
           ))}
         </div>
 
-        {/* Riepilogo e Controllo per Divisione Manuale */}
         {divisionType === 'manual' && totalAmount && (
           <div className={`p-2 rounded text-sm ${totalIsCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             <p>Totale inserito: {manualSum.toFixed(2)} € di {(Number(totalAmount) || 0).toFixed(2)} €</p>
@@ -205,7 +191,6 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
           </div>
         )}
 
-        {/* Pulsanti di Azione */}
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>Annulla</Button>
           <Button type="submit" disabled={addExpenseMutation.isPending}>
