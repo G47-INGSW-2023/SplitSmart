@@ -19,7 +19,7 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,view_members,view_admins]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,delete_expense,view_members,view_admins]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -300,6 +300,36 @@ fn get_expenses(
         Ok(e) => Ok(Json(e)),
         Err(e) => {
             error!("error running get_expenses transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+/// deletese group expense, needs to be performed either by expense creator or admin user
+#[openapi(tag = "Expenses")]
+#[delete("/<gid>/expenses/<exid>")]
+fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Status> {
+    let mut conn = establish_connection();
+
+    // TODO: check that the division array sum equals the total
+    match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
+        let expense = diesel::delete(expenses::table.filter(expenses::id.eq(exid)))
+            .get_result::<Expense>(conn)?;
+
+        if !((expense.paid_by == user.id) || is_admin(gid, user.id).is_ok()) {
+            error!("trying to delete expense but user is not admin or creator of expense");
+            return Err(diesel::result::Error::RollbackTransaction);
+        };
+
+        diesel::delete(
+            expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
+        )
+        .execute(conn)?;
+        Ok(expense)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running add_expense transaction: {:?}", e);
             Err(Status::InternalServerError)
         }
     }
