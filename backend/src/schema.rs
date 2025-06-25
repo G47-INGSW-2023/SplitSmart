@@ -20,6 +20,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    friend_invites (id) {
+        id -> Integer,
+        invited_user_id -> Integer,
+        inviting_user_id -> Integer,
+        invite_date -> Timestamp,
+        invite_status -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     friendships (user1, user2) {
         user1 -> Integer,
         user2 -> Integer,
@@ -120,6 +130,7 @@ diesel::joinable!(notifications -> users (recipient_user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     expense_participations,
     expenses,
+    friend_invites,
     friendships,
     group_administrators,
     group_invites,
