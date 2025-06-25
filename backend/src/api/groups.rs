@@ -19,7 +19,7 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,delete_expense,view_members,view_admins]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,update_expense,delete_expense,view_members,view_admins]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -325,6 +325,58 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
             expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
         )
         .execute(conn)?;
+        Ok(expense)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running add_expense transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+/// updates a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>, can only be executed by who inserted the expense or an admin
+#[openapi(tag = "Expenses")]
+#[put("/<gid>/expenses/<exid>", data = "<new_expense>")]
+fn update_expense(
+    gid: i32,
+    exid: i32,
+    new_expense: Json<PutExpense>,
+    user: User,
+) -> Result<Json<Expense>, Status> {
+    let mut conn = establish_connection();
+
+    // TODO: check that the division array sum equals the total
+    match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
+        let expense = diesel::update(expenses::table.filter(expenses::id.eq(exid)))
+            .set((
+                expenses::desc.eq(new_expense.desc.clone()),
+                expenses::total_amount.eq(new_expense.total_amount),
+                expenses::paid_by.eq(new_expense.paid_by),
+            ))
+            .get_result::<Expense>(conn)?;
+
+        if !((expense.paid_by == user.id) || is_admin(gid, user.id).is_ok()) {
+            error!("trying to update expense but user is not admin or creator of expense");
+            return Err(diesel::result::Error::RollbackTransaction);
+        };
+
+        diesel::delete(
+            expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
+        )
+        .execute(conn)?;
+
+        for (d, a) in new_expense.division.iter() {
+            // TODO: check that user is in group
+            (
+                expense_participations::expense_id.eq(expense.id),
+                expense_participations::user_id.eq(d),
+                expense_participations::amount_due.eq(a),
+            )
+                .insert_into(expense_participations::table)
+                .execute(conn)?;
+        }
+
         Ok(expense)
     }) {
         Ok(e) => Ok(Json(e)),
