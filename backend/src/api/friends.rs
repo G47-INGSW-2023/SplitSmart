@@ -1,4 +1,6 @@
-use diesel::{result::Error, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl};
+use diesel::{
+    result::Error, BoolExpressionMethods, ExpressionMethods, Insertable, QueryDsl, RunQueryDsl,
+};
 use rocket::{http::Status, serde::json::Json};
 use rocket_okapi::{
     okapi::openapi3::OpenApi, openapi, openapi_get_routes_spec, settings::OpenApiSettings,
@@ -8,12 +10,35 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     establish_connection,
-    models::{FriendInvite, User},
+    models::{FriendInvite, Friendship, User},
     schema::{friend_invites, friendships},
 };
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![settings:view_invites,invite_friend,accept_invite,reject_invite]
+}
+
+#[openapi(tag = "Friends")]
+#[get("/")]
+fn get_friends(user: User) -> Result<Json<Vec<Friendship>>, Status> {
+    let mut conn = establish_connection();
+
+    match friendships::table
+        .filter(
+            friendships::user1
+                .eq(user.id)
+                .or(friendships::user2.eq(user.id)),
+        )
+        .get_results::<Friendship>(&mut conn)
+    {
+        Ok(v) => Ok(Json(v)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct InviteUser {
+    email: String,
 }
 
 /// view all friendship invites, rejected, approved and pending, about the user making the request
