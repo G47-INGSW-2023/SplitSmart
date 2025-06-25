@@ -56,11 +56,6 @@ fn view_invites(user: User) -> Result<Json<Vec<FriendInvite>>, Status> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct InviteUser {
-    email: String,
-}
-
 /// invites a user to the group through mail address, executing user needs to be group admin
 #[openapi(tag = "Friends")]
 #[post("/invites", data = "<invite>")]
