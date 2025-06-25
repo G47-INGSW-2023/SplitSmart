@@ -20,6 +20,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    friendships (user1, user2) {
+        user1 -> Integer,
+        user2 -> Integer,
+    }
+}
+
+diesel::table! {
     group_administrators (group_id, user_id) {
         group_id -> Integer,
         user_id -> Integer,
@@ -113,6 +120,7 @@ diesel::joinable!(notifications -> users (recipient_user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     expense_participations,
     expenses,
+    friendships,
     group_administrators,
     group_invites,
     group_members,

@@ -61,6 +61,7 @@ fn rocket() -> _ {
         "/groups" => api::groups::get_routes_and_docs(&openapi_settings),
         "/user" => api::users::get_routes_and_docs(&openapi_settings),
         "/notifications" => api::notifications::get_routes_and_docs(&openapi_settings),
+        "/friends" => api::friends::get_routes_and_docs(&openapi_settings),
     };
 
     building_rocket
