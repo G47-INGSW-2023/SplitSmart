@@ -6,16 +6,24 @@ import { useState } from 'react';
 import AddExpenseModal from './addExpenseModal'; 
 import ExpenseDetailModal from './expensesDetailModal';
 import { useAuth } from '@/lib/authContext'; 
+import EditExpenseModal from './editExpenseModal';
 
 interface ExpensesTabProps {
   groupId: number;
   initialExpenses: ExpenseWithParticipants[];
+  isCurrentUserAdmin: boolean; 
 }
 
-export default function ExpensesTab({ groupId, initialExpenses }: ExpensesTabProps) {
+export default function ExpensesTab({ groupId, initialExpenses, isCurrentUserAdmin }: ExpensesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<ExpenseWithParticipants | null>(null);
+  const [editingExpense, setEditingExpense] = useState<ExpenseWithParticipants | null>(null);
   const { user: currentUser } = useAuth();
+
+  const handleOpenEditModal = (expenseData: ExpenseWithParticipants) => {
+    setSelectedExpense(null); 
+    setEditingExpense(expenseData); 
+  };
 
   return (
     <div className="space-y-4">
@@ -97,6 +105,17 @@ export default function ExpensesTab({ groupId, initialExpenses }: ExpensesTabPro
           isOpen={!!selectedExpense}
           onClose={() => setSelectedExpense(null)}
           groupId={groupId}
+          isCurrentUserAdmin={isCurrentUserAdmin}
+          onEditClick={() => handleOpenEditModal(selectedExpense)}
+        />
+      )}
+
+      {editingExpense && (
+        <EditExpenseModal
+          isOpen={!!editingExpense}
+          onClose={() => setEditingExpense(null)}
+          groupId={groupId}
+          expenseData={editingExpense}
         />
       )}
     </div>

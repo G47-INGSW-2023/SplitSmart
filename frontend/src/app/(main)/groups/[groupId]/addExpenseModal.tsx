@@ -128,7 +128,7 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="exp-amount" className="text-black">Importo Totale (€)</label>
-            <Input id="exp-amount" type="number"  className="text-gray-500" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value) || 0)} required min="0.01" step="0.01" />
+            <Input id="exp-amount" type="number" className="text-gray-500" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value) || 0)} required min="0.01" step="0.01" />
           </div>
           <div>
             <label htmlFor="exp-payer" className="block text-sm font-medium text-gray-700 mb-1">Pagato da</label>

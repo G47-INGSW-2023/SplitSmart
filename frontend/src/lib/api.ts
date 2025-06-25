@@ -213,6 +213,39 @@ export const api = {
   },
 
   /**
+   * Aggiorna una spesa esistente. Richiede privilegi di admin.
+   */
+  updateExpense: async (groupId: number, expenseId: number, data: AddExpenseData): Promise<Expense> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/expenses/${expenseId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    const updatedExpense = await handleResponse<Expense>(response);
+    if (!updatedExpense) {
+      throw new Error("Il backend non ha restituito la spesa aggiornata.");
+    }
+    return updatedExpense;
+  },
+
+  /**
+   * Elimina una spesa. Richiede privilegi di admin.
+   */
+  deleteExpense: async (groupId: number, expenseId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/expenses/${expenseId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      // Usiamo una gestione dell'errore semplice
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile eliminare la spesa.";
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
    * Promuove un utente a admin del gruppo.
    */
   promoteToAdmin: async (groupId: number, userId: number): Promise<void> => {

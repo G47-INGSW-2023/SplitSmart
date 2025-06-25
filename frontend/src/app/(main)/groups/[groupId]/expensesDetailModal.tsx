@@ -1,16 +1,19 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { ExpenseWithParticipants, User } from '@/types';
 import { Modal } from '@/component/ui/modal';
 import { useAuth } from '@/lib/authContext';
+import { Button } from '@/component/ui/button';
 
 interface ExpenseDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   expenseData: ExpenseWithParticipants;
   groupId: number;
+  isCurrentUserAdmin: boolean; 
+  onEditClick: () => void;
 }
 
 const DetailRowSkeleton = () => (
@@ -20,10 +23,21 @@ const DetailRowSkeleton = () => (
   </div>
 );
 
-export default function ExpenseDetailModal({ isOpen, onClose, expenseData, groupId }: ExpenseDetailModalProps) {
+export default function ExpenseDetailModal({ isOpen, onClose, expenseData, groupId, isCurrentUserAdmin, onEditClick }: ExpenseDetailModalProps) {
   const [expense, participants] = expenseData;
   const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
 
+  const deleteMutation = useMutation({
+    mutationFn: () => api.deleteExpense(groupId, expense.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
+      alert("Spesa eliminata con successo.");
+      onClose();
+    },
+    onError: (error) => alert(`Errore: ${error.message}`),
+  });
+  
   const { data: members, isLoading: isLoadingMembers } = useQuery<User[]>({
     queryKey: ['members-for-details', groupId],
     queryFn: async () => {
@@ -64,7 +78,6 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
             {isLoadingMembers ? (
               <> <DetailRowSkeleton /> <DetailRowSkeleton /> </>
             ) : (
-              // Mostra i dettagli reali
               participants.map(p => {
                 const participantName = memberIdToNameMap.get(p.user_id) || `Utente ID ${p.user_id}`;
                 return (
@@ -80,6 +93,28 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
             )}
           </div>
         </div>
+        {isCurrentUserAdmin && (
+          <div className="border-t pt-4 mt-4 flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={onEditClick}
+              disabled={deleteMutation.isPending}
+            >
+              Modifica
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (window.confirm("Sei sicuro di voler eliminare questa spesa?")) {
+                  deleteMutation.mutate();
+                }
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Eliminazione...' : 'Elimina'}
+            </Button>
+          </div>
+        )}
       </div>
     </Modal>
   );
