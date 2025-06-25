@@ -19,7 +19,7 @@ use crate::schema;
 use crate::schema::groups::dsl::*;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,view_members,view_admins]
+    openapi_get_routes_spec![settings:create_group, get_groups,get_group,update_group,delete_group,add_member,invite_user,remove_member,promote_to_admin,demote_admin,add_expense,get_expenses,update_expense,delete_expense,view_members,view_admins]
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -305,6 +305,88 @@ fn get_expenses(
     }
 }
 
+/// deletese group expense, needs to be performed either by expense creator or admin user
+#[openapi(tag = "Expenses")]
+#[delete("/<gid>/expenses/<exid>")]
+fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Status> {
+    let mut conn = establish_connection();
+
+    // TODO: check that the division array sum equals the total
+    match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
+        let expense = diesel::delete(expenses::table.filter(expenses::id.eq(exid)))
+            .get_result::<Expense>(conn)?;
+
+        if !((expense.paid_by == user.id) || is_admin(gid, user.id).is_ok()) {
+            error!("trying to delete expense but user is not admin or creator of expense");
+            return Err(diesel::result::Error::RollbackTransaction);
+        };
+
+        diesel::delete(
+            expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
+        )
+        .execute(conn)?;
+        Ok(expense)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running add_expense transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
+/// updates a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>, can only be executed by who inserted the expense or an admin
+#[openapi(tag = "Expenses")]
+#[put("/<gid>/expenses/<exid>", data = "<new_expense>")]
+fn update_expense(
+    gid: i32,
+    exid: i32,
+    new_expense: Json<PutExpense>,
+    user: User,
+) -> Result<Json<Expense>, Status> {
+    let mut conn = establish_connection();
+
+    // TODO: check that the division array sum equals the total
+    match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
+        let expense = diesel::update(expenses::table.filter(expenses::id.eq(exid)))
+            .set((
+                expenses::desc.eq(new_expense.desc.clone()),
+                expenses::total_amount.eq(new_expense.total_amount),
+                expenses::paid_by.eq(new_expense.paid_by),
+            ))
+            .get_result::<Expense>(conn)?;
+
+        if !((expense.paid_by == user.id) || is_admin(gid, user.id).is_ok()) {
+            error!("trying to update expense but user is not admin or creator of expense");
+            return Err(diesel::result::Error::RollbackTransaction);
+        };
+
+        diesel::delete(
+            expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
+        )
+        .execute(conn)?;
+
+        for (d, a) in new_expense.division.iter() {
+            // TODO: check that user is in group
+            (
+                expense_participations::expense_id.eq(expense.id),
+                expense_participations::user_id.eq(d),
+                expense_participations::amount_due.eq(a),
+            )
+                .insert_into(expense_participations::table)
+                .execute(conn)?;
+        }
+
+        Ok(expense)
+    }) {
+        Ok(e) => Ok(Json(e)),
+        Err(e) => {
+            error!("error running add_expense transaction: {:?}", e);
+            Err(Status::InternalServerError)
+        }
+    }
+}
+
 // ---------------------------- MEMBERS
 
 /// adds a user to the group, can only be performed by an admin
@@ -398,7 +480,7 @@ fn invite_user(
     }
 }
 
-/// removes a member from the group, can only be performed by admin
+/// removes a member from the group(and from admin table if he is admin), can only be performed by another admin
 #[openapi(tag = "Groups")]
 #[delete("/<gid>/members/<uid>")]
 fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
@@ -407,17 +489,24 @@ fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
 
     is_admin(gid, user.id)?;
 
-    let result = diesel::delete(
+    let r1 = diesel::delete(
         group_members
             .filter(group_id.eq(gid))
             .filter(user_id.eq(uid)),
     )
     .execute(&mut conn);
 
-    match result {
-        Ok(rows_deleted) if rows_deleted > 0 => Ok(()), // Successfully deleted
-        Ok(_) => Err(Status::NotFound),                 // User was not a member of the group
-        Err(_) => Err(Status::InternalServerError),     // An error occurred
+    let r2 = diesel::delete(
+        group_administrators::table
+            .filter(group_administrators::group_id.eq(gid))
+            .filter(group_administrators::user_id.eq(uid)),
+    )
+    .execute(&mut conn);
+
+    match (r1, r2) {
+        (Ok(rows_deleted), Ok(_)) if rows_deleted > 0 => Ok(()), // Successfully deleted
+        (Ok(_), Ok(_)) => Err(Status::NotFound), // User was not a member of the group
+        (Err(_), _) | (_, Err(_)) => Err(Status::InternalServerError), // An error occurred
     }
 }
 

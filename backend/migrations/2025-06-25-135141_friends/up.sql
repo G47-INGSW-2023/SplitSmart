@@ -1,0 +1,7 @@
+CREATE TABLE friendships (
+    user1 INTEGER NOT NULL,
+    user2 INTEGER NOT NULL,
+    PRIMARY KEY (user1,user2),
+    FOREIGN KEY (user1) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user2) REFERENCES users(id) ON DELETE CASCADE
+);

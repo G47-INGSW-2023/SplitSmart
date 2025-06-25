@@ -66,6 +66,26 @@ pub struct GroupInvite {
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(table_name = friend_invites)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct FriendInvite {
+    pub id: i32,
+    pub invited_user_id: i32,
+    pub inviting_user_id: i32,
+    pub invite_date: NaiveDateTime,
+    pub invite_status: Option<String>,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[diesel(primary_key(user1, user2))]
+#[diesel(table_name = friendships)]
+#[diesel(check_for_backend(Sqlite))]
+pub struct Friendship {
+    pub user1: i32,
+    pub user2: i32,
+}
+
+#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[diesel(primary_key(group_id, user_id))]
 #[diesel(table_name = group_members)]
 #[diesel(check_for_backend(Sqlite))]
