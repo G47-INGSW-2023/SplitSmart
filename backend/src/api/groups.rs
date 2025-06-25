@@ -398,7 +398,7 @@ fn invite_user(
     }
 }
 
-/// removes a member from the group, can only be performed by admin
+/// removes a member from the group(and from admin table if he is admin), can only be performed by another admin
 #[openapi(tag = "Groups")]
 #[delete("/<gid>/members/<uid>")]
 fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
@@ -407,17 +407,24 @@ fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
 
     is_admin(gid, user.id)?;
 
-    let result = diesel::delete(
+    let r1 = diesel::delete(
         group_members
             .filter(group_id.eq(gid))
             .filter(user_id.eq(uid)),
     )
     .execute(&mut conn);
 
-    match result {
-        Ok(rows_deleted) if rows_deleted > 0 => Ok(()), // Successfully deleted
-        Ok(_) => Err(Status::NotFound),                 // User was not a member of the group
-        Err(_) => Err(Status::InternalServerError),     // An error occurred
+    let r2 = diesel::delete(
+        group_administrators::table
+            .filter(group_administrators::group_id.eq(gid))
+            .filter(group_administrators::user_id.eq(uid)),
+    )
+    .execute(&mut conn);
+
+    match (r1, r2) {
+        (Ok(rows_deleted), Ok(_)) if rows_deleted > 0 => Ok(()), // Successfully deleted
+        (Ok(_), Ok(_)) => Err(Status::NotFound), // User was not a member of the group
+        (Err(_), _) | (_, Err(_)) => Err(Status::InternalServerError), // An error occurred
     }
 }
 
