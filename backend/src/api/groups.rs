@@ -3,6 +3,7 @@ use crate::{
     models::{Expense, ExpenseParticipation, Group, GroupInvite, GroupMember, User},
     schema::{
         expense_participations, expenses, group_administrators, group_invites, group_members,
+        notifications,
     },
 };
 
@@ -235,7 +236,7 @@ pub struct PutExpense {
 fn add_expense(
     gid: i32,
     new_expense: Json<PutExpense>,
-    _user: User,
+    user: User,
 ) -> Result<Json<Expense>, Status> {
     let mut conn = establish_connection();
 
@@ -259,6 +260,16 @@ fn add_expense(
                 expense_participations::amount_due.eq(a),
             )
                 .insert_into(expense_participations::table)
+                .execute(conn)?;
+
+            (
+                notifications::notified_user_id.eq(d),
+                notifications::notification_type.eq("NEW_EXPENSE"),
+                notifications::expense_id.eq(expense.id),
+                notifications::group_id.eq(gid),
+                notifications::user_id.eq(user.id),
+            )
+                .insert_into(notifications::table)
                 .execute(conn)?;
         }
 
@@ -321,10 +332,22 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
             return Err(diesel::result::Error::RollbackTransaction);
         };
 
-        diesel::delete(
+        let res = diesel::delete(
             expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
         )
-        .execute(conn)?;
+        .get_results::<ExpenseParticipation>(conn)?;
+
+        for ep in res {
+            (
+                notifications::notified_user_id.eq(ep.user_id),
+                notifications::notification_type.eq("EXPENSE_DELETED"),
+                notifications::group_id.eq(gid),
+                notifications::user_id.eq(user.id),
+            )
+                .insert_into(notifications::table)
+                .execute(conn)?;
+        }
+
         Ok(expense)
     }) {
         Ok(e) => Ok(Json(e)),
