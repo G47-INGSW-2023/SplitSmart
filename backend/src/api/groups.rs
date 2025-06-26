@@ -398,6 +398,16 @@ fn update_expense(
             )
                 .insert_into(expense_participations::table)
                 .execute(conn)?;
+
+            (
+                notifications::notified_user_id.eq(d),
+                notifications::notification_type.eq("EXPENSE_MODIFIED"),
+                notifications::expense_id.eq(expense.id),
+                notifications::group_id.eq(gid),
+                notifications::user_id.eq(user.id),
+            )
+                .insert_into(notifications::table)
+                .execute(conn)?;
         }
 
         Ok(expense)
