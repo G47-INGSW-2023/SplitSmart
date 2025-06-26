@@ -267,6 +267,7 @@ fn add_expense(
                 notifications::notification_type.eq("NEW_EXPENSE"),
                 notifications::expense_id.eq(expense.id),
                 notifications::group_id.eq(gid),
+                notifications::creation_date.eq(diesel::dsl::now),
                 notifications::user_id.eq(user.id),
             )
                 .insert_into(notifications::table)

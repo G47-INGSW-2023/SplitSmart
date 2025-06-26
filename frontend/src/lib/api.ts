@@ -368,12 +368,12 @@ export const api = {
   /**
    * Segna una notifica come letta.
    */
-   markNotificationAsRead: async (notificationId: number): Promise<Notification> => {
+   markNotificationAsRead: async (notificationId: number): Promise<Notific> => {
     const response = await fetch(`${API_PROXY_URL}/notifications/${notificationId}/read`, {
       method: 'GET',
       credentials: 'include',
     });
-    const updatedNotification = await handleResponse<Notification>(response);
+    const updatedNotification = await handleResponse<Notific>(response);
     if (!updatedNotification) {
       throw new Error("Il backend non ha restituito la notifica aggiornata dopo averla segnata come letta.");
     }

@@ -1,116 +1,49 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { Button } from '@/component/ui/button';
-import { GroupInvite, Notific, StatoInvito } from '@/types';
-import { NotificationList } from '@/component/notifications/NotificationList';
-import { Notifica, TipoNotifica } from '@/component/notifications/NotificationPage';
+import InvitesTab from '@/component/notifications/invitesTab';
+import NotificationsTab from '@/component/notifications/notificationsTab';
+import { useState } from 'react';
 
-function transformGroupInvite(invite: GroupInvite): Notifica {
-  const statusMap = {
-    "PENDING": StatoInvito.PENDENTE,
-    "ACCEPTED": StatoInvito.ACCETTATO,
-    "REJECTED": StatoInvito.RIFIUTATO,
-  };
-  return {
-    idNotifica: invite.id,
-    tipo: TipoNotifica.INVITO_GRUPPO,
-    messaggio: `Hai ricevuto un invito per unirti al gruppo ID ${invite.group_id}.`, // Migliorabile se avessimo i nomi
-    timestamp: invite.invite_date,
-    letta: invite.invite_status !== 'PENDING',
-    idInvito: invite.id,
-    statoInvito: statusMap[invite.invite_status!] || StatoInvito.PENDENTE,
-  };
-}
-
-// Funzione helper per trasformare una notifica API in una notifica UI
-function transformApiNotification(notif: Notific): Notifica {
-  return {
-    idNotifica: notif.id,
-    tipo: TipoNotifica.GENERALE, // Per ora, tutte le altre sono generiche
-    messaggio: notif.message,
-    timestamp: notif.creation_date,
-    letta: notif.read,
-  };
-}
+type ActiveTab = 'notifications' | 'invites';
 
 export default function NotificationsPage() {
-  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('notifications');
 
-  const { data: allNotifications, isLoading } = useQuery<Notifica[]>({
-    queryKey: ['all-notifications'],
-    queryFn: async () => {
-      const [apiNotifications, groupInvites] = await Promise.all([
-        api.getNotifications(),
-        api.getInvites(),
-      ]);
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto p-4 md:p-6">
+      <h1 className="text-3xl font-bold text-gray-800">Centro Notifiche</h1>
 
-      const transformedNotifications = apiNotifications.map(transformApiNotification);
-      const transformedInvites = groupInvites.map(transformGroupInvite);
-
-      // Unisci e ordina
-      return [...transformedNotifications, ...transformedInvites]
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    },
-  });
-
-   const acceptGroupInviteMutation = useMutation({
-    mutationFn: (inviteId: number) => api.acceptInvite(inviteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['groups-with-balances'] }); // Invalida anche i gruppi!
-    },
-    onError: (error) => alert(`Errore: ${error.message}`),
-  });
-
-    const rejectGroupInviteMutation = useMutation({
-    mutationFn: (inviteId: number) => api.rejectInvite(inviteId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
-  });
-
-  // Mutazione per segnare come letta
-  const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: number) => api.markNotificationAsRead(notificationId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
-    onError: (error) => alert(`Errore: ${error.message}`),
-  });
-
-  const handleMarkAsRead = (notificationId: number) => {
-    markAsReadMutation.mutate(notificationId);
-  };
-  
-  const handleAcceptInvite = (inviteId: number) => {
-    acceptGroupInviteMutation.mutate(inviteId);
-  };
-  
-  const handleDeclineInvite = (inviteId: number) => {
-    rejectGroupInviteMutation.mutate(inviteId);
-  };
-  
-  const unreadCount = allNotifications?.filter(n => !n.letta).length || 0;
-
-  if (isLoading) return <div>Caricamento notifiche...</div>;
-
-   if (isLoading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Notifiche</h1>
-        <p className="text-center py-10 text-gray-500">Caricamento notifiche...</p>
+      {/* Selettore Tab */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
+              ${activeTab === 'notifications'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+          >
+            Notifiche
+          </button>
+          <button
+            onClick={() => setActiveTab('invites')}
+            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
+              ${activeTab === 'invites'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+          >
+            Inviti
+          </button>
+        </nav>
       </div>
-    );
-  }
 
- return (
-    <div className="space-y-8 ...">
-      {/* ... (Intestazione) ... */}
-      
-      <NotificationList 
-        notifications={allNotifications || []}
-        onMarkAsRead={handleMarkAsRead}
-        onAcceptInvite={handleAcceptInvite}
-        onDeclineInvite={handleDeclineInvite}
-      />
+      {/* Contenuto Condizionale delle Tab */}
+      <div>
+        {activeTab === 'notifications' && <NotificationsTab />}
+        {activeTab === 'invites' && <InvitesTab />}
+      </div>
     </div>
   );
 }

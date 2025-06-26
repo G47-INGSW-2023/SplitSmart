@@ -121,12 +121,11 @@ export interface SimplifiedTransaction {
 
 export interface Notific {
   id: number;
-  recipient_user_id: number;
+  notified_user_id: number;
   notification_type: string | null;
-  message: string;
+  message: string; // Il backend NON ha questo, lo genereremo noi.
   creation_date: string;
   read: boolean;
-  referenced_object: number | null;
 }
 
 export enum TipoNotifica {

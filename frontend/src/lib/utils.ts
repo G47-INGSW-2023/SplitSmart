@@ -1,4 +1,4 @@
-import { ProcessedMember, SimplifiedTransaction } from "@/types";
+import { Notific, ProcessedMember, SimplifiedTransaction } from "@/types";
 
 export function simplifyDebts(members: Pick<ProcessedMember, 'id' | 'username' | 'netBalance'>[]): SimplifiedTransaction[] {
   const balances = members
@@ -39,4 +39,18 @@ export function simplifyDebts(members: Pick<ProcessedMember, 'id' | 'username' |
   }
 
   return transactions;
+}
+
+export function formatNotificationMessage(notification: Notific): string {
+  switch (notification.notification_type) {
+    case 'NEW_EXPENSE':
+      return `È stata aggiunta una nuova spesa nel gruppo ID ${notification.id}.`;
+    case 'GROUP_INVITE':
+      return `Hai ricevuto un invito per unirti al gruppo ID ${notification.id} dall'utente ID ${notification.id}.`;
+    case 'FRIEND_INVITE':
+        return `Hai ricevuto una richiesta di amicizia dall'utente ID ${notification.id}.`;
+    // Aggiungi altri casi per ogni tipo di notifica che il backend può inviare
+    default:
+      return `Hai una nuova notifica (ID: ${notification.id}).`;
+  }
 }
