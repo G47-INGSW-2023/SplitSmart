@@ -7,13 +7,13 @@ import { Notific } from '@/types';
 
 interface NotificationItemProps {
   notification: Notifica;
-  onMarkAsRead: (id: string) => void; // L'ID ora è una stringa
-  onAcceptInvite: (id: string, inviteId?: number) => void;
-  onDeclineInvite: (id: string, inviteId?: number) => void;
+  onMarkAsRead: (id: number) => void; // L'ID ora è una stringa
+  onAcceptInvite: (id: number, inviteId?: number) => void;
+  onDeclineInvite: (id: number, inviteId?: number) => void;
 }
 
 export const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMarkAsRead, onAcceptInvite, onDeclineInvite }) => {
-  const router = useRouter();
+    const router = useRouter();
 
   // Il backend non fornisce un link, ma potremmo costruirlo in futuro
   // basandoci su `notification_type` e `referenced_object`.
@@ -21,21 +21,29 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
   const linkCorrelato = null;
 
   const handleItemClick = () => {
-    if (!notification.read) {
-      onMarkAsRead(notification.id);
+    if (!notification.letta) {
+      onMarkAsRead(notification.idNotifica);
     }
     if (linkCorrelato) {
       router.push(linkCorrelato);
     }
   };
 
-  const formattedTimestamp = new Date(notification.creation_date).toLocaleString('it-IT', {
+  const handleMarkAsReadClick = () => {
+    // Il backend per "mark as read" vuole un ID numerico. Dobbiamo estrarlo.
+    const numericId = notification.idNotifica;
+    if (!isNaN(numericId)) {
+        // onMarkAsRead(numericId); // La nostra funzione padre ora si aspetta una stringa, dobbiamo sistemarlo
+    }
+  };
+
+  const formattedTimestamp = new Date(notification.timestamp).toLocaleString('it-IT', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 
   return (
     <div
-      className={`p-4 border-b border-gray-200 last:border-b-0 ${!notification.read ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
+      className={`p-4 border-b border-gray-200 last:border-b-0 ${!notification.letta ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
     >
       <div className="flex items-start gap-4">
         <div 
@@ -43,17 +51,17 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
           onClick={linkCorrelato ? handleItemClick : undefined}
         >
           {/* Mostra il messaggio reale dal backend */}
-          <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-800`}>
-            {notification.message}
+          <p className={`text-sm ${!notification.letta ? 'font-semibold' : 'font-normal'} text-gray-800`}>
+            {notification.messaggio}
           </p>
           <p className="text-xs text-gray-500 mt-1">{formattedTimestamp}</p>
         </div>
         {/* Mostra il pulsante "leggi" solo se la notifica non è letta */}
-        {!notification.read && (
+        {!notification.letta && (
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              onMarkAsRead(notification.id);
+              onMarkAsRead(notification.idNotifica);
             }}
             title="Segna come letta"
             className="flex-shrink-0"
@@ -65,8 +73,8 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
       {/* Rimuoviamo completamente la logica per gli inviti, perché ora è separata */}
         {notification.tipo === TipoNotifica.INVITO_GRUPPO && notification.statoInvito === StatoInvito.PENDENTE && (
         <div className="mt-3 flex space-x-2">
-          <Button onClick={() => onAcceptInvite(notification.id, notification.idInvito)}>Accetta</Button>
-          <Button variant="secondary" onClick={() => onDeclineInvite(notification.id, notification.idInvito)}>Rifiuta</Button>
+          <Button onClick={() => onAcceptInvite(notification.idNotifica, notification.idInvito)}>Accetta</Button>
+          <Button variant="secondary" onClick={() => onDeclineInvite(notification.idNotifica, notification.idInvito)}>Rifiuta</Button>
         </div>
       )}
       {notification.statoInvito === StatoInvito.ACCETTATO && (

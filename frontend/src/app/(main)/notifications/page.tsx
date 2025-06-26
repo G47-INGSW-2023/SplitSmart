@@ -3,8 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button } from '@/component/ui/button';
-import { GroupInvite, Notific, Notifica, StatoInvito, TipoNotifica } from '@/types';
+import { GroupInvite, Notific, StatoInvito } from '@/types';
 import { NotificationList } from '@/component/notifications/NotificationList';
+import { Notifica, TipoNotifica } from '@/component/notifications/NotificationPage';
 
 function transformGroupInvite(invite: GroupInvite): Notifica {
   const statusMap = {
@@ -13,7 +14,7 @@ function transformGroupInvite(invite: GroupInvite): Notifica {
     "REJECTED": StatoInvito.RIFIUTATO,
   };
   return {
-    id: `group-invite-${invite.id}`,
+    idNotifica: invite.id,
     tipo: TipoNotifica.INVITO_GRUPPO,
     messaggio: `Hai ricevuto un invito per unirti al gruppo ID ${invite.group_id}.`, // Migliorabile se avessimo i nomi
     timestamp: invite.invite_date,
@@ -26,7 +27,7 @@ function transformGroupInvite(invite: GroupInvite): Notifica {
 // Funzione helper per trasformare una notifica API in una notifica UI
 function transformApiNotification(notif: Notific): Notifica {
   return {
-    id: `notification-${notif.id}`,
+    idNotifica: notif.id,
     tipo: TipoNotifica.GENERALE, // Per ora, tutte le altre sono generiche
     messaggio: notif.message,
     timestamp: notif.creation_date,
@@ -54,31 +55,37 @@ export default function NotificationsPage() {
     },
   });
 
-  
-  const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: number) => api.markNotificationAsRead(notificationId),
+   const acceptGroupInviteMutation = useMutation({
+    mutationFn: (inviteId: number) => api.acceptInvite(inviteId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['all-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['groups-with-balances'] }); // Invalida anche i gruppi!
     },
-    onError: (error) => {
-      alert(`Errore: ${error.message}`);
-    },
+    onError: (error) => alert(`Errore: ${error.message}`),
   });
 
-  const acceptGroupInviteMutation = useMutation({
-    mutationFn: (inviteId: number) => api.acceptInvite(inviteId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
-  });
-  const rejectGroupInviteMutation = useMutation({
+    const rejectGroupInviteMutation = useMutation({
     mutationFn: (inviteId: number) => api.rejectInvite(inviteId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
   });
 
+  // Mutazione per segnare come letta
+  const markAsReadMutation = useMutation({
+    mutationFn: (notificationId: number) => api.markNotificationAsRead(notificationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
+    onError: (error) => alert(`Errore: ${error.message}`),
+  });
 
-  const handleMarkAsRead = (id: number) => {
-    if (!markAsReadMutation.isPending) {
-      markAsReadMutation.mutate(id);
-    }
+  const handleMarkAsRead = (notificationId: number) => {
+    markAsReadMutation.mutate(notificationId);
+  };
+  
+  const handleAcceptInvite = (inviteId: number) => {
+    acceptGroupInviteMutation.mutate(inviteId);
+  };
+  
+  const handleDeclineInvite = (inviteId: number) => {
+    rejectGroupInviteMutation.mutate(inviteId);
   };
   
   const unreadCount = allNotifications?.filter(n => !n.letta).length || 0;
@@ -100,18 +107,9 @@ export default function NotificationsPage() {
       
       <NotificationList 
         notifications={allNotifications || []}
-        onMarkAsRead={(id) => { /* ... */ }}
-        // Passiamo le funzioni di gestione corrette
-        onAcceptInvite={(notifId, inviteId) => {
-          if (notifId.startsWith('group-invite-') && inviteId) {
-            acceptGroupInviteMutation.mutate(inviteId);
-          }
-        }}
-        onDeclineInvite={(notifId, inviteId) => {
-          if (notifId.startsWith('group-invite-') && inviteId) {
-            rejectGroupInviteMutation.mutate(inviteId);
-          }
-        }}
+        onMarkAsRead={handleMarkAsRead}
+        onAcceptInvite={handleAcceptInvite}
+        onDeclineInvite={handleDeclineInvite}
       />
     </div>
   );
