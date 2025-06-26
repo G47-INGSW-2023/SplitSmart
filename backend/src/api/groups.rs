@@ -325,19 +325,11 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
 
     // TODO: check that the division array sum equals the total
     match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
-        let expense = diesel::delete(expenses::table.filter(expenses::id.eq(exid)))
-            .get_result::<Expense>(conn)?;
+        let res = expense_participations::table
+            .filter(expense_participations::expense_id.eq(exid))
+            .get_results::<ExpenseParticipation>(conn)?;
 
-        if !((expense.paid_by == user.id) || is_admin(gid, user.id).is_ok()) {
-            error!("trying to delete expense but user is not admin or creator of expense");
-            return Err(diesel::result::Error::RollbackTransaction);
-        };
-
-        let res = diesel::delete(
-            expense_participations::table.filter(expense_participations::expense_id.eq(exid)),
-        )
-        .get_results::<ExpenseParticipation>(conn)?;
-
+        // notify users of expense deletion
         for ep in res {
             (
                 notifications::notified_user_id.eq(ep.user_id),
@@ -349,11 +341,19 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
                 .execute(conn)?;
         }
 
+        let expense = diesel::delete(expenses::table.filter(expenses::id.eq(exid)))
+            .get_result::<Expense>(conn)?;
+
+        if !((expense.paid_by == user.id) || is_admin(gid, user.id).is_ok()) {
+            error!("trying to delete expense but user is not admin or creator of expense");
+            return Err(diesel::result::Error::RollbackTransaction);
+        };
+
         Ok(expense)
     }) {
         Ok(e) => Ok(Json(e)),
         Err(e) => {
-            error!("error running add_expense transaction: {:?}", e);
+            error!("error running delete_expense transaction: {:?}", e);
             Err(Status::InternalServerError)
         }
     }
