@@ -56,20 +56,25 @@ const MemberRow = ({ member, onAdminActionsClick }: { member: ProcessedMember, o
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-200 bg-gray-50/50 p-4 space-y-2">
-          <h4 className="font-semibold text-sm text-gray-700">Dettaglio Saldo:</h4>
+       <div className="border-t border-gray-200 bg-gray-50/50 p-4">
           {member.debts.length > 0 ? (
-            <ul className="text-sm space-y-1">
-              {member.debts.map(debt => (
-                <li key={debt.otherMemberId} className="flex justify-between items-center">
-                  <span className="text-gray-700">
-                    {debt.amount > 0 ? `Riceve da ${debt.otherMemberName}` : `Paga a ${debt.otherMemberName}`}
-                  </span>
-                  <span className={`font-medium ${debt.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {Math.abs(debt.amount).toFixed(2)} €
-                  </span>
-                </li>
-              ))}
+            <ul className="text-sm space-y-2">
+              {member.debts.map(debt => {
+                const isReceiving = debt.amount > 0;
+                const colorClass = isReceiving ? 'text-green-600' : 'text-red-500';
+                
+                return (
+                  <li key={debt.otherMemberId} className="flex justify-end items-center">
+                    <p className="text-gray-600">
+                      {isReceiving ? 'Riceve ' : 'Paga '}
+                      <span className={`font-bold ${colorClass}`}>
+                        {Math.abs(debt.amount).toFixed(2)} €
+                      </span>
+                      <span className="font-medium">{isReceiving ? ' da ' : ' a '}{debt.otherMemberName}</span>                      
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="text-sm text-center text-gray-500">In pari con tutti i membri del gruppo.</p>

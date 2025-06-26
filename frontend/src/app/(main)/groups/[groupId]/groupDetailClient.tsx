@@ -164,7 +164,8 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         {activeTab === 'expenses' && (
           <ExpensesTab 
             groupId={groupId} 
-            initialExpenses={processedData.expenses} 
+            initialExpenses={processedData.expenses}
+            isCurrentUserAdmin={processedData.isCurrentUserAdmin}
           />
         )}
         {activeTab === 'members' && (

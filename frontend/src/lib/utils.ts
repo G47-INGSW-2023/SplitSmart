@@ -1,4 +1,4 @@
-import { ProcessedMember, SimplifiedTransaction } from "@/types";
+import { Notific, ProcessedMember, SimplifiedTransaction } from "@/types";
 
 export function simplifyDebts(members: Pick<ProcessedMember, 'id' | 'username' | 'netBalance'>[]): SimplifiedTransaction[] {
   const balances = members
@@ -39,4 +39,17 @@ export function simplifyDebts(members: Pick<ProcessedMember, 'id' | 'username' |
   }
 
   return transactions;
+}
+
+export function formatNotificationMessage(notification: Notific): string {
+  switch (notification.notification_type) {
+    case 'NEW_EXPENSE':
+      return `È stata aggiunta una nuova spesa nel gruppo ID ${notification.group_id}.`;
+    case 'EXPENSE_DELETED':
+      return `È stata aggiunta una nuova spesa nel gruppo ID ${notification.group_id}.`;
+    case 'EXPENSE_MODIFIED':
+      return `È stata aggiunta una nuova spesa nel gruppo ID ${notification.group_id}.`;
+    default:
+      return `Hai una nuova notifica (ID: ${notification.group_id}).`;
+  }
 }
