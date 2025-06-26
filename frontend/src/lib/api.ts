@@ -1,4 +1,4 @@
-import type { UserInfo, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, GroupInvite, GroupMember, ExpenseWithParticipants, Expense, AddExpenseData } from '@/types';
+import type { UserInfo, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, GroupInvite, GroupMember, ExpenseWithParticipants, Expense, AddExpenseData, Notific } from '@/types';
 
 const API_PROXY_URL = '/api-proxy';
 /**
@@ -352,5 +352,31 @@ export const api = {
       throw new Error("Il backend non ha restituito l'invito aggiornato.");
     }
     return updatedInvite;
+  },
+
+  /**
+   * Recupera le notifiche dell'utente.
+   */
+   getNotifications: async (): Promise<Notific[]> => {
+    const response = await fetch(`${API_PROXY_URL}/notifications`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    return (await handleResponse<Notific[]>(response)) || [];
+  },
+
+  /**
+   * Segna una notifica come letta.
+   */
+   markNotificationAsRead: async (notificationId: number): Promise<Notification> => {
+    const response = await fetch(`${API_PROXY_URL}/notifications/${notificationId}/read`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    const updatedNotification = await handleResponse<Notification>(response);
+    if (!updatedNotification) {
+      throw new Error("Il backend non ha restituito la notifica aggiornata dopo averla segnata come letta.");
+    }
+    return updatedNotification;
   },
 };

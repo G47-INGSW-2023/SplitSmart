@@ -3,97 +3,79 @@
 import { Button } from '@/component/ui/button'; // Assicurati che il percorso sia corretto
 import { Notifica, TipoNotifica, StatoInvito } from './NotificationPage'; // Adatta il percorso se separi i tipi
 import { useRouter } from 'next/navigation'; // Per la navigazione
+import { Notific } from '@/types';
 
 interface NotificationItemProps {
   notification: Notifica;
-  onMarkAsRead: (id: string) => void;
-  onAcceptInvite: (idNotifica: string, idInvito?: string, nomeGruppo?: string) => void;
-  onDeclineInvite: (idNotifica: string, idInvito?: string, nomeGruppo?: string) => void;
+  onMarkAsRead: (id: string) => void; // L'ID ora è una stringa
+  onAcceptInvite: (id: string, inviteId?: number) => void;
+  onDeclineInvite: (id: string, inviteId?: number) => void;
 }
 
-export const NotificationItem: React.FC<NotificationItemProps> = ({
-  notification,
-  onMarkAsRead,
-  onAcceptInvite,
-  onDeclineInvite,
-}) => {
+export const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMarkAsRead, onAcceptInvite, onDeclineInvite }) => {
   const router = useRouter();
 
+  // Il backend non fornisce un link, ma potremmo costruirlo in futuro
+  // basandoci su `notification_type` e `referenced_object`.
+  // Esempio: const link = `/groups/${notification.referenced_object}`;
+  const linkCorrelato = null;
+
   const handleItemClick = () => {
-    if (!notification.letta) {
-      onMarkAsRead(notification.idNotifica);
+    if (!notification.read) {
+      onMarkAsRead(notification.id);
     }
-    if (notification.linkCorrelato) {
-      router.push(notification.linkCorrelato);
+    if (linkCorrelato) {
+      router.push(linkCorrelato);
     }
   };
 
-  const formattedTimestamp = new Date(notification.timestamp).toLocaleString('it-IT', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  const formattedTimestamp = new Date(notification.creation_date).toLocaleString('it-IT', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 
   return (
     <div
-      className={`p-4 border-b border-gray-200 last:border-b-0 ${
-        !notification.letta ? 'bg-blue-50' : 'bg-white'
-      } hover:bg-gray-50 transition-colors`}
+      className={`p-4 border-b border-gray-200 last:border-b-0 ${!notification.read ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
     >
-      <div className="flex flex-row items-start">
+      <div className="flex items-start gap-4">
         <div 
-          className={`flex-grow ${notification.linkCorrelato ? 'cursor-pointer' : ''} basis-10/12`}
-          onClick={notification.linkCorrelato ? handleItemClick : undefined}
+          className={`flex-grow ${linkCorrelato ? 'cursor-pointer' : ''}`}
+          onClick={linkCorrelato ? handleItemClick : undefined}
         >
-          <p className={`text-sm ${!notification.letta ? 'font-semibold' : 'font-normal'} text-gray-800`}>
-            {notification.messaggio}
+          {/* Mostra il messaggio reale dal backend */}
+          <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-normal'} text-gray-800`}>
+            {notification.message}
           </p>
           <p className="text-xs text-gray-500 mt-1">{formattedTimestamp}</p>
         </div>
-        {!notification.letta && (
+        {/* Mostra il pulsante "leggi" solo se la notifica non è letta */}
+        {!notification.read && (
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              onMarkAsRead(notification.idNotifica);
+              onMarkAsRead(notification.id);
             }}
             title="Segna come letta"
-            className="basis-1/6"
+            className="flex-shrink-0"
           >
-            {/* Potresti usare un'icona qui */}
             ✓
           </Button>
         )}
       </div>
-
-      {/* Azioni specifiche per tipo di notifica */}
-      {notification.tipo === TipoNotifica.INVITO_GRUPPO && notification.statoInvito === StatoInvito.PENDENTE && (
+      {/* Rimuoviamo completamente la logica per gli inviti, perché ora è separata */}
+        {notification.tipo === TipoNotifica.INVITO_GRUPPO && notification.statoInvito === StatoInvito.PENDENTE && (
         <div className="mt-3 flex space-x-2">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAcceptInvite(notification.idNotifica, notification.idInvito, notification.nomeGruppo);
-            }}
-          >
-            Accetta Invito
-          </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeclineInvite(notification.idNotifica, notification.idInvito, notification.nomeGruppo);
-            }}
-          >
-            Rifiuta
-          </Button>
+          <Button onClick={() => onAcceptInvite(notification.id, notification.idInvito)}>Accetta</Button>
+          <Button variant="secondary" onClick={() => onDeclineInvite(notification.id, notification.idInvito)}>Rifiuta</Button>
         </div>
       )}
-       {notification.tipo === TipoNotifica.INVITO_GRUPPO && notification.statoInvito === StatoInvito.ACCETTATO && (
+      {notification.statoInvito === StatoInvito.ACCETTATO && (
         <p className="mt-2 text-xs text-green-600">Invito accettato.</p>
       )}
-      {notification.tipo === TipoNotifica.INVITO_GRUPPO && notification.statoInvito === StatoInvito.RIFIUTATO && (
+      {notification.statoInvito === StatoInvito.RIFIUTATO && (
         <p className="mt-2 text-xs text-red-600">Invito rifiutato.</p>
       )}
     </div>
+    
   );
 };

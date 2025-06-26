@@ -2,91 +2,116 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Button } from '@/component/ui/button'; 
-import { Notifica, StatoInvito, TipoNotifica } from '@/component/notifications/NotificationPage'; 
-import { NotificationList } from '@/component/notifications/NotificationList'; 
-import { GroupInvite } from '@/types';
+import { Button } from '@/component/ui/button';
+import { GroupInvite, Notific, Notifica, StatoInvito, TipoNotifica } from '@/types';
+import { NotificationList } from '@/component/notifications/NotificationList';
 
-
-function transformInviteToNotification(invite: GroupInvite): Notifica {
+function transformGroupInvite(invite: GroupInvite): Notifica {
+  const statusMap = {
+    "PENDING": StatoInvito.PENDENTE,
+    "ACCEPTED": StatoInvito.ACCETTATO,
+    "REJECTED": StatoInvito.RIFIUTATO,
+  };
   return {
-    idNotifica: `invite-${invite.id}`,
+    id: `group-invite-${invite.id}`,
     tipo: TipoNotifica.INVITO_GRUPPO,
-    messaggio: `Hai ricevuto un invito per unirti al gruppo ID ${invite.group_id} dall'utente ID ${invite.inviting_user_id}.`,
+    messaggio: `Hai ricevuto un invito per unirti al gruppo ID ${invite.group_id}.`, // Migliorabile se avessimo i nomi
     timestamp: invite.invite_date,
     letta: invite.invite_status !== 'PENDING',
-    idInvito: invite.id.toString(), 
-    nomeGruppo: `Gruppo ${invite.group_id}`,
-    statoInvito: invite.invite_status === 'ACCEPTED' ? StatoInvito.ACCETTATO : 
-                 invite.invite_status === 'REJECTED' ? StatoInvito.RIFIUTATO : StatoInvito.PENDENTE,
+    idInvito: invite.id,
+    statoInvito: statusMap[invite.invite_status!] || StatoInvito.PENDENTE,
+  };
+}
+
+// Funzione helper per trasformare una notifica API in una notifica UI
+function transformApiNotification(notif: Notific): Notifica {
+  return {
+    id: `notification-${notif.id}`,
+    tipo: TipoNotifica.GENERALE, // Per ora, tutte le altre sono generiche
+    messaggio: notif.message,
+    timestamp: notif.creation_date,
+    letta: notif.read,
   };
 }
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
 
-  const { data: invites, isLoading, isError } = useQuery<GroupInvite[]>({
-    queryKey: ['invites'],
-    queryFn: api.getInvites,
+  const { data: allNotifications, isLoading } = useQuery<Notifica[]>({
+    queryKey: ['all-notifications'],
+    queryFn: async () => {
+      const [apiNotifications, groupInvites] = await Promise.all([
+        api.getNotifications(),
+        api.getInvites(),
+      ]);
+
+      const transformedNotifications = apiNotifications.map(transformApiNotification);
+      const transformedInvites = groupInvites.map(transformGroupInvite);
+
+      // Unisci e ordina
+      return [...transformedNotifications, ...transformedInvites]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    },
   });
 
-  const inviteNotifications = invites?.map(transformInviteToNotification) || [];
-  const allNotifications = [...inviteNotifications]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  
+  const markAsReadMutation = useMutation({
+    mutationFn: (notificationId: number) => api.markNotificationAsRead(notificationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: (error) => {
+      alert(`Errore: ${error.message}`);
+    },
+  });
 
-  const acceptMutation = useMutation({
+  const acceptGroupInviteMutation = useMutation({
     mutationFn: (inviteId: number) => api.acceptInvite(inviteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invites'] });
-      queryClient.invalidateQueries({ queryKey: ['groups'] });
-    },
-    onError: (error) => alert(`Errore: ${error.message}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
   });
-
-  const rejectMutation = useMutation({
+  const rejectGroupInviteMutation = useMutation({
     mutationFn: (inviteId: number) => api.rejectInvite(inviteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invites'] });
-    },
-    onError: (error) => alert(`Errore: ${error.message}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-notifications'] }),
   });
 
-  const handleAcceptInvite = (idNotifica: string, idInvito?: string) => {
-    if (!idInvito) return;
-    acceptMutation.mutate(parseInt(idInvito, 10));
+
+  const handleMarkAsRead = (id: number) => {
+    if (!markAsReadMutation.isPending) {
+      markAsReadMutation.mutate(id);
+    }
   };
+  
+  const unreadCount = allNotifications?.filter(n => !n.letta).length || 0;
 
-  const handleDeclineInvite = (idNotifica: string, idInvito?: string) => {
-    if (!idInvito) return;
-    rejectMutation.mutate(parseInt(idInvito, 10));
-  };
+  if (isLoading) return <div>Caricamento notifiche...</div>;
 
-  const handleMarkAsRead = (id: string) => console.log(`Segna come letta: ${id}`);
-  const handleMarkAllAsRead = () => console.log('Segna tutte come lette');
-
-  if (isLoading) {
-    return <div>Caricamento notifiche...</div>;
-  }
-  if (isError) {
-    return <div>Errore nel caricamento degli inviti.</div>;
-  }
-
-  const unreadCount = allNotifications.filter(n => !n.letta).length;
-
-  return (
-    <div className="space-y-8 p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-800">Notifiche</h1>
-        {unreadCount > 0 && (
-          <Button onClick={handleMarkAllAsRead}>Segna tutte come lette ({unreadCount})</Button>
-        )}
+   if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">Notifiche</h1>
+        <p className="text-center py-10 text-gray-500">Caricamento notifiche...</p>
       </div>
+    );
+  }
+
+ return (
+    <div className="space-y-8 ...">
+      {/* ... (Intestazione) ... */}
       
       <NotificationList 
-        notifications={allNotifications}
-        onMarkAsRead={handleMarkAsRead}
-        onAcceptInvite={handleAcceptInvite}
-        onDeclineInvite={handleDeclineInvite}
+        notifications={allNotifications || []}
+        onMarkAsRead={(id) => { /* ... */ }}
+        // Passiamo le funzioni di gestione corrette
+        onAcceptInvite={(notifId, inviteId) => {
+          if (notifId.startsWith('group-invite-') && inviteId) {
+            acceptGroupInviteMutation.mutate(inviteId);
+          }
+        }}
+        onDeclineInvite={(notifId, inviteId) => {
+          if (notifId.startsWith('group-invite-') && inviteId) {
+            rejectGroupInviteMutation.mutate(inviteId);
+          }
+        }}
       />
     </div>
   );

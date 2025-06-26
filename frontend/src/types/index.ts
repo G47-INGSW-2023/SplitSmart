@@ -118,3 +118,37 @@ export interface SimplifiedTransaction {
   toName: string;
   amount: number;
 }
+
+export interface Notific {
+  id: number;
+  recipient_user_id: number;
+  notification_type: string | null;
+  message: string;
+  creation_date: string;
+  read: boolean;
+  referenced_object: number | null;
+}
+
+export enum TipoNotifica {
+  INVITO_GRUPPO = 'INVITO_GRUPPO',
+  RICHIESTA_AMICIZIA = 'RICHIESTA_AMICIZIA',
+  GENERALE = 'GENERALE',
+}
+
+export enum StatoInvito {
+  PENDENTE = 'PENDENTE',
+  ACCETTATO = 'ACCETTATO',
+  RIFIUTATO = 'RIFIUTATO',
+}
+
+export interface Notifica {
+  id: string; // Un ID unico, es. "notif-1" o "invite-123"
+  tipo: TipoNotifica;
+  messaggio: string;
+  timestamp: string;
+  letta: boolean;
+  
+  // Campi specifici per gli inviti
+  idInvito?: number; // L'ID numerico dell'invito da usare nelle API
+  statoInvito?: StatoInvito;
+}
