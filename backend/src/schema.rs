@@ -86,12 +86,13 @@ diesel::table! {
 diesel::table! {
     notifications (id) {
         id -> Integer,
-        recipient_user_id -> Integer,
+        notified_user_id -> Integer,
         notification_type -> Nullable<Text>,
-        message -> Text,
+        group_id -> Nullable<Integer>,
+        user_id -> Nullable<Integer>,
+        expense_id -> Nullable<Integer>,
         creation_date -> Timestamp,
         read -> Bool,
-        referenced_object -> Nullable<Integer>,
     }
 }
 
@@ -125,7 +126,8 @@ diesel::joinable!(group_invites -> groups (group_id));
 diesel::joinable!(group_members -> groups (group_id));
 diesel::joinable!(group_members -> users (user_id));
 diesel::joinable!(notification_preferences -> users (user_id));
-diesel::joinable!(notifications -> users (recipient_user_id));
+diesel::joinable!(notifications -> expenses (expense_id));
+diesel::joinable!(notifications -> groups (group_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     expense_participations,

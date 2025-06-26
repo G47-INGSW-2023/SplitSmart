@@ -123,12 +123,13 @@ pub struct NotificationPreference {
 #[diesel(check_for_backend(Sqlite))]
 pub struct Notification {
     pub id: i32,
-    pub recipient_user_id: i32,
+    pub notified_user_id: i32,
     pub notification_type: Option<String>,
-    pub message: String,
+    pub group_id: Option<i32>,
+    pub user_id: Option<i32>,
+    pub expense_id: Option<i32>,
     pub creation_date: NaiveDateTime,
     pub read: bool,
-    pub referenced_object: Option<i32>,
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]

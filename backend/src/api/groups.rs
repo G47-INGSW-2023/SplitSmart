@@ -235,7 +235,7 @@ pub struct PutExpense {
 fn add_expense(
     gid: i32,
     new_expense: Json<PutExpense>,
-    user: User,
+    _user: User,
 ) -> Result<Json<Expense>, Status> {
     let mut conn = establish_connection();
 
@@ -279,7 +279,7 @@ type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
 #[get("/<gid>/expenses")]
 fn get_expenses(
     gid: i32,
-    user: User,
+    _user: User,
 ) -> Result<Json<Vec<(Expense, Vec<ExpenseParticipation>)>>, Status> {
     let mut conn = establish_connection();
     // TODO: check user is member
