@@ -5,6 +5,8 @@ import { api } from '@/lib/api';
 import { Notific } from '@/types';
 import { formatNotificationMessage } from '@/lib/utils';
 import { Button } from '@/component/ui/button';
+import ExpenseNotificationItem from './expenseNotificationItem'; // Importa il nuovo componente
+import GenericExpenseNotificationItem from './genericExpenseNotificationItem'; // Importa il nuovo componente
 
 export default function NotificationsTab() {
   const queryClient = useQueryClient();
@@ -23,23 +25,46 @@ export default function NotificationsTab() {
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
-      {notifications && notifications.length > 0 ? (
-        notifications.map(notif => (
-          <div key={notif.id} className={`p-4 border-b ${!notif.read ? 'bg-blue-50' : ''}`}>
+     {notifications?.map(notif => (
+          <div key={notif.id} className={`p-4 border-b ${!notif.read ? 'bg-blue-50' : ''} ...`}>
             <div className="flex items-start gap-4">
               <div className="flex-grow">
-                <p className="text-sm text-gray-700">{formatNotificationMessage(notif)}</p>
-                <p className="text-xs text-gray-500 mt-1">{new Date(notif.creation_date).toLocaleString('it-IT')}</p>
+                
+                {/* --- DISPATCHER AGGIORNATO --- */}
+                {(() => {
+                  switch (notif.notification_type) {
+                    case 'NEW_EXPENSE':
+                      return <ExpenseNotificationItem notification={notif} />;
+                    
+                    case 'EXPENSE_UPDATED':
+                      // Per "modificata", non conosciamo il nome della spesa, quindi mostriamo un testo generico
+                      // In futuro, il backend potrebbe aggiungere `expense_desc` alla notifica
+                      return <GenericExpenseNotificationItem 
+                                notification={notif} 
+                                actionText="ha modificato la spesa"
+                                expenseName={`ID ${notif.expense_id}`} // Nome finto
+                             />;
+
+                    case 'EXPENSE_DELETED':
+                      return <GenericExpenseNotificationItem 
+                                notification={notif} 
+                                actionText="ha cancellato una spesa" 
+                             />;
+
+                    default:
+                      // Fallback per tutte le altre
+                      return <p className="text-sm">{formatNotificationMessage(notif)}</p>;
+                  }
+                })()}
+                
+                <p className="text-xs text-gray-500 mt-2">{new Date(notif.creation_date).toLocaleString('it-IT')}</p>
               </div>
               {!notif.read && (
                 <Button onClick={() => markAsReadMutation.mutate(notif.id)}>✓</Button>
               )}
             </div>
           </div>
-        ))
-      ) : (
-        <p className="p-10 text-center text-gray-500">Nessuna notifica.</p>
-      )}
+        ))}
     </div>
   );
 }

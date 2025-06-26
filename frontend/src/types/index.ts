@@ -69,21 +69,7 @@ export interface AddExpenseData {
   division: [number, number][];
 }
 
-// Per invitare un utente
-export interface InviteUserData {
-  email: string;
-  message?: string;
-}
 
-export interface GroupInvite {
-  id: number;
-  group_id: number;
-  invited_user_id: number;
-  inviting_user_id: number;
-  invite_date: string;
-  invite_status: "PENDING" | "ACCEPTED" | "REJECTED" | null;
-  optional_message: string | null;
-}
 
 export interface ProcessedMember extends User {
   isAdmin: boolean;
@@ -119,35 +105,31 @@ export interface SimplifiedTransaction {
   amount: number;
 }
 
+// Per invitare un utente
+export interface InviteUserData {
+  email: string;
+  message?: string;
+}
+
+export interface GroupInvite {
+  id: number;
+  group_id: number;
+  invited_user_id: number;
+  inviting_user_id: number;
+  invite_date: string;
+  invite_status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | null;
+  optional_message: string | null;
+}
+
 export interface Notific {
   id: number;
   notified_user_id: number;
   notification_type: string | null;
-  message: string; // Il backend NON ha questo, lo genereremo noi.
+  group_id: number | null;
+  user_id: number | null;
+  expense_id: number | null;
   creation_date: string;
   read: boolean;
+  message: string; 
 }
 
-export enum TipoNotifica {
-  INVITO_GRUPPO = 'INVITO_GRUPPO',
-  RICHIESTA_AMICIZIA = 'RICHIESTA_AMICIZIA',
-  GENERALE = 'GENERALE',
-}
-
-export enum StatoInvito {
-  PENDENTE = 'PENDENTE',
-  ACCETTATO = 'ACCETTATO',
-  RIFIUTATO = 'RIFIUTATO',
-}
-
-export interface Notifica {
-  id: string; // Un ID unico, es. "notif-1" o "invite-123"
-  tipo: TipoNotifica;
-  messaggio: string;
-  timestamp: string;
-  letta: boolean;
-  
-  // Campi specifici per gli inviti
-  idInvito?: number; // L'ID numerico dell'invito da usare nelle API
-  statoInvito?: StatoInvito;
-}
