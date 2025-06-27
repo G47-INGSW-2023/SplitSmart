@@ -405,8 +405,11 @@ export const api = {
       body: JSON.stringify(data),
       credentials: 'include',
     });
-    return handleResponse<FriendInvite>(response);
+    const newInvite = await handleResponse<FriendInvite>(response);
+    if (!newInvite) throw new Error("Il backend non ha restituito l'invito creato.");
+    return newInvite;
   },
+
 
   /**
    * Accettare la richiesta di amicizia.
@@ -416,7 +419,9 @@ export const api = {
       method: 'PUT',
       credentials: 'include',
     });
-    return handleResponse<FriendInvite>(response);
+    const updatedInvite = await handleResponse<FriendInvite>(response);
+    if (!updatedInvite) throw new Error("Il backend non ha restituito l'invito aggiornato.");
+    return updatedInvite;
   },
 
   /**
@@ -427,6 +432,8 @@ export const api = {
       method: 'PUT',
       credentials: 'include',
     });
-    return handleResponse<FriendInvite>(response);
+    const updatedInvite = await handleResponse<FriendInvite>(response);
+    if (!updatedInvite) throw new Error("Il backend non ha restituito l'invito aggiornato.");
+    return updatedInvite;
   },
 };
