@@ -121,6 +121,11 @@ export interface GroupInvite {
   optional_message: string | null;
 }
 
+export interface EnrichedGroupInvite extends GroupInvite {
+  group_name: string;
+  inviting_user_name: string;
+}
+
 export interface Notific {
   id: number;
   notified_user_id: number;

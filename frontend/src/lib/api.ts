@@ -82,7 +82,6 @@ export const api = {
    * Recupera le informazioni di un gruppo dall'id.
    */
   getGroupById: async (groupId: number): Promise<Group> => {
-    // Il backend ha già questo endpoint: GET /groups/<gid>
     const response = await fetch(`${API_PROXY_URL}/groups/${groupId}`, {
       method: 'GET',
       credentials: 'include',

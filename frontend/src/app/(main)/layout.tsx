@@ -21,7 +21,7 @@ const sidebarNavItems = [
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, logout, unreadNotificationsCount } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -53,7 +53,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         : 'hover:bg-gray-700' 
                       }`}
                   >
-                    {item.title}
+                    <span>{item.title}</span>
+                  
+                    {item.href === '/notifications' && unreadNotificationsCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadNotificationsCount}
+                      </span>
+                    )}                  
                   </Link>
                 </li>
               );
