@@ -36,7 +36,7 @@ export default function NotificationsTab() {
                     case 'NEW_EXPENSE':
                       return <ExpenseNotificationItem notification={notif} />;
                     
-                    case 'EXPENSE_UPDATED':
+                    case 'EXPENSE_MODIFIED':
                       // Per "modificata", non conosciamo il nome della spesa, quindi mostriamo un testo generico
                       // In futuro, il backend potrebbe aggiungere `expense_desc` alla notifica
                       return <GenericExpenseNotificationItem 
