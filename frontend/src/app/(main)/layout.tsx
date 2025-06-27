@@ -18,6 +18,10 @@ const sidebarNavItems = [
     title: "Profilo",
     href: "/profile",
   },
+  { 
+    title: "Amici", 
+    href: "/friends" 
+  },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {

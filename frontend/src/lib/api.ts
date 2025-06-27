@@ -1,4 +1,4 @@
-import type { UserInfo, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, GroupInvite, GroupMember, ExpenseWithParticipants, Expense, AddExpenseData, Notific } from '@/types';
+import type { UserInfo, LoginCredentials, UserRegisterData, Group, CreateGroupData, InviteUserData, GroupInvite, GroupMember, ExpenseWithParticipants, Expense, AddExpenseData, Notific, Friendship, FriendInvite, InviteFriendData } from '@/types';
 
 const API_PROXY_URL = '/api-proxy';
 /**
@@ -377,5 +377,56 @@ export const api = {
       throw new Error("Il backend non ha restituito la notifica aggiornata dopo averla segnata come letta.");
     }
     return updatedNotification;
+  },
+
+  /**
+   * Recupera la lista degli amici dell'utente.
+   */
+  getFriends: async (): Promise<Friendship[]> => {
+    const response = await fetch(`${API_PROXY_URL}/friends`, { credentials: 'include' });
+    return (await handleResponse<Friendship[]>(response)) || [];
+  },
+  
+  /**
+   * Recupera la lista delle richieste di amicizia.
+   */
+  getFriendInvites: async (): Promise<FriendInvite[]> => {
+    const response = await fetch(`${API_PROXY_URL}/friends/invites`, { credentials: 'include' });
+    return (await handleResponse<FriendInvite[]>(response)) || [];
+  },
+  
+  /**
+   * Invia la richiesta di amicizia.
+   */
+  inviteFriend: async (data: InviteFriendData): Promise<FriendInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/friends/invites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    return handleResponse<FriendInvite>(response);
+  },
+
+  /**
+   * Accettare la richiesta di amicizia.
+   */
+  acceptFriendInvite: async (inviteId: number): Promise<FriendInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/friends/invites/${inviteId}/accept`, {
+      method: 'PUT',
+      credentials: 'include',
+    });
+    return handleResponse<FriendInvite>(response);
+  },
+
+  /**
+   * Rifiutare la richiesta di amicizia
+   */
+  rejectFriendInvite: async (inviteId: number): Promise<FriendInvite> => {
+    const response = await fetch(`${API_PROXY_URL}/friends/invites/${inviteId}/reject`, {
+      method: 'PUT',
+      credentials: 'include',
+    });
+    return handleResponse<FriendInvite>(response);
   },
 };

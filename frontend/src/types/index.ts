@@ -138,3 +138,24 @@ export interface Notific {
   message: string; 
 }
 
+export interface Friendship {
+  user1: number;
+  user2: number;
+}
+
+export interface FriendInvite {
+  id: number;
+  inviting_user_id: number;
+  invited_user_id: number;
+  invite_date: string;
+  invite_status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | null;
+}
+
+export interface InviteFriendData {
+  email: string;
+}
+
+export interface EnrichedFriendInvite extends FriendInvite {
+  inviting_user_name: string;
+}
+export interface EnrichedFriend extends User {} 
