@@ -12,18 +12,12 @@ interface ExpensesTabProps {
   groupId: number;
   initialExpenses: ExpenseWithParticipants[];
   isCurrentUserAdmin: boolean; 
+  onSelectExpense: (expense: ExpenseWithParticipants) => void;
 }
 
-export default function ExpensesTab({ groupId, initialExpenses, isCurrentUserAdmin }: ExpensesTabProps) {
+export default function ExpensesTab({ groupId, initialExpenses, isCurrentUserAdmin, onSelectExpense }: ExpensesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<ExpenseWithParticipants | null>(null);
-  const [editingExpense, setEditingExpense] = useState<ExpenseWithParticipants | null>(null);
   const { user: currentUser } = useAuth();
-
-  const handleOpenEditModal = (expenseData: ExpenseWithParticipants) => {
-    setSelectedExpense(null); 
-    setEditingExpense(expenseData); 
-  };
 
   return (
     <div className="space-y-4">
@@ -64,7 +58,7 @@ export default function ExpensesTab({ groupId, initialExpenses, isCurrentUserAdm
             return (
               <li key={expense.id}>
                 <button
-                  onClick={() => setSelectedExpense(expenseItem)}
+                  onClick={() => onSelectExpense(expenseItem)}
                   className="w-full text-left bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex justify-between items-center">
@@ -98,26 +92,6 @@ export default function ExpensesTab({ groupId, initialExpenses, isCurrentUserAdm
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
-
-      {selectedExpense && (
-        <ExpenseDetailModal
-          expenseData={selectedExpense}
-          isOpen={!!selectedExpense}
-          onClose={() => setSelectedExpense(null)}
-          groupId={groupId}
-          isCurrentUserAdmin={isCurrentUserAdmin}
-          onEditClick={() => handleOpenEditModal(selectedExpense)}
-        />
-      )}
-
-      {editingExpense && (
-        <EditExpenseModal
-          isOpen={!!editingExpense}
-          onClose={() => setEditingExpense(null)}
-          groupId={groupId}
-          expenseData={editingExpense}
-        />
-      )}
     </div>
   );
 }

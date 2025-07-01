@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { ProcessedMember} from '@/types';
+import { ExpenseWithParticipants, ProcessedMember} from '@/types';
 import { useAuth } from '@/lib/authContext';
 import ExpensesTab from './expensesTab';
 import MembersTab from './membersTab';   
@@ -11,6 +11,9 @@ import { Button } from '@/component/ui/button';
 import DeleteGroupModal from './deleteGroupModal';
 import EditGroupModal from './editGroupModal';
 import { simplifyDebts } from '@/lib/utils';
+import { useSearchParams, useRouter } from 'next/navigation';
+import ExpenseDetailModal from './expensesDetailModal';
+import EditExpenseModal from './editExpenseModal';
 
 
 type Tab = 'expenses' | 'members';
@@ -24,6 +27,12 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const { user: currentUser } = useAuth(); 
+
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseWithParticipants | null>(null);
+  const [editingExpense, setEditingExpense] = useState<ExpenseWithParticipants | null>(null);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const { data: processedData, isLoading, isError, error } = useQuery({
     queryKey: ['group-details-simplified', groupId],
@@ -105,6 +114,28 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
     enabled: !isNaN(groupId) && !!currentUser,
   });
 
+  useEffect(() => {
+    const expenseIdToOpen = searchParams.get('openExpense');
+    
+    if (expenseIdToOpen && processedData?.expenses) {
+      const expenseToSelect = processedData.expenses.find(
+        ([exp]) => exp.id === parseInt(expenseIdToOpen, 10)
+      );
+
+      if (expenseToSelect) {
+        setSelectedExpense(expenseToSelect); // Imposta lo stato locale
+        
+        const newUrl = `/groups/${groupId}`;
+        router.replace(newUrl, { scroll: false });
+      }
+    }
+  }, [processedData, searchParams, groupId, router]); 
+
+  const handleOpenEditModal = (expenseData: ExpenseWithParticipants) => {
+    setSelectedExpense(null);
+    setEditingExpense(expenseData);
+  };
+
   if (isLoading) return <div>Caricamento...</div>;
   if (isError) return <div className="text-red-500">Errore: {error.message}</div>;
   if (!processedData) return <div>Dati non disponibili.</div>;
@@ -166,6 +197,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
             groupId={groupId} 
             initialExpenses={processedData.expenses}
             isCurrentUserAdmin={processedData.isCurrentUserAdmin}
+            onSelectExpense={setSelectedExpense}
           />
         )}
         {activeTab === 'members' && (
@@ -177,6 +209,24 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         )}
       </div>
       
+      {selectedExpense && (
+        <ExpenseDetailModal
+          expenseData={selectedExpense}
+          isOpen={!!selectedExpense}
+          onClose={() => setSelectedExpense(null)}
+          groupId={groupId}
+          isCurrentUserAdmin={processedData.isCurrentUserAdmin}
+          onEditClick={() => handleOpenEditModal(selectedExpense)}
+        />
+      )}
+      {editingExpense && (
+        <EditExpenseModal
+          isOpen={!!editingExpense}
+          onClose={() => setEditingExpense(null)}
+          groupId={groupId}
+          expenseData={editingExpense}
+        />
+      )}
       <EditGroupModal
         isOpen={isEditModalOpen}
         onClose={() => setEditModalOpen(false)}
