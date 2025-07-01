@@ -3,11 +3,14 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { api } from './api';
 import type { User, LoginCredentials } from '@/types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  unreadNotificationsCount: number;
+  refetchNotifications: () => void; 
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
 }
@@ -17,6 +20,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Inizia come true per il check iniziale
+  const queryClient = useQueryClient(); // Inizializza il query client
+
+  const { data: unreadNotificationsCount = 0, refetch: refetchNotifications } = useQuery({
+    queryKey: ['unread-count'],
+    queryFn: async () => {
+      if (!user) return 0;
+      
+      const [notifications, groupInvites] = await Promise.all([
+        api.getNotifications(),
+        api.getInvites(),
+      ]);
+
+      const unreadNotifs = notifications.filter(n => !n.read).length;
+      const pendingInvites = groupInvites.filter(i => i.invite_status === 'PENDING').length;
+      
+      return unreadNotifs + pendingInvites;
+    },
+    enabled: !!user, // Esegui solo se l'utente è loggato
+    staleTime: 1000 * 60 * 5, // Non ricaricare per 5 minuti a meno che non venga invalidato
+  });
 
   // Funzione per provare a recuperare l'utente se è già loggato
   const checkAuthStatus = useCallback(async () => {
@@ -64,6 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 5. Salva l'ID utente in sessionStorage per poter ripristinare la sessione al refresh
       sessionStorage.setItem('userId', userId.toString());
 
+      queryClient.invalidateQueries({ queryKey: ['unread-count'] }); 
     } catch (error) {
       setUser(null);
       sessionStorage.removeItem('userId');
@@ -90,6 +114,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user, 
     isAuthenticated: !!user,
     isLoading, 
+    unreadNotificationsCount,
+    refetchNotifications,
     login, 
     logout 
   };

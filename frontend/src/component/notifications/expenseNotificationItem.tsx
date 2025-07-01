@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { Notific, User, Group, ExpenseWithParticipants } from '@/types';
 import { useAuth } from '@/lib/authContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; 
 
 interface ExpenseNotificationItemProps {
   notification: Notific;
@@ -18,67 +19,111 @@ const LoadingSkeleton = () => (
 );
 
 export default function ExpenseNotificationItem({ notification }: ExpenseNotificationItemProps) {
+  const router = useRouter(); 
   const { user: currentUser } = useAuth();
   
-  // Usiamo una query che dipende dagli ID nella notifica
   const { data, isLoading } = useQuery({
-    queryKey: ['notification-details', notification.id],
+    queryKey: ['contextual-notification-details', notification.id],
     queryFn: async () => {
-      // Recupera tutti i dati necessari in parallelo
-      const [expenseData, group, actor] = await Promise.all([
-        // Non abbiamo un'API per una singola spesa, quindi recuperiamo tutte quelle del gruppo
-        api.getGroupExpenses(notification.group_id!),
-        api.getGroupById(notification.group_id!),
-        api.getUserDetails(notification.user_id!),
+      // Chiamate API di base per gruppo e attore
+      const groupPromise = api.getGroupById(notification.group_id!);
+      const actorPromise = api.getUserDetails(notification.user_id!);
+      
+      let expensePromise: Promise<ExpenseWithParticipants[]> | null = null;
+      // Se è una notifica di NUOVA SPESA, prepariamo anche la chiamata per le spese
+      if (notification.notification_type === 'NEW_EXPENSE' || notification.notification_type === 'EXPENSE_MODIFIED') {
+        expensePromise = api.getGroupExpenses(notification.group_id!);
+      }
+
+      // Eseguiamo le chiamate necessarie
+      const [group, actor, expensesData] = await Promise.all([
+        groupPromise, 
+        actorPromise,
+        expensePromise // Sarà `null` se non è una nuova spesa
       ]);
 
-      // Troviamo la spesa specifica che ci interessa
-      const relevantExpenseItem = expenseData.find(([exp]) => exp.id === notification.expense_id);
+      let relevantExpenseItem = null;
+      if (expensesData) {
+        relevantExpenseItem = expensesData.find(([exp]) => exp.id === notification.expense_id);
+      }
       
-      return { expenseItem: relevantExpenseItem, group, actor };
+      return { group, actor, expenseItem: relevantExpenseItem };
     },
-    // Esegui la query solo se gli ID necessari sono presenti
-    enabled: !!notification.group_id && !!notification.expense_id && !!notification.notified_user_id && !!currentUser,
+    enabled: !!notification.group_id && !!notification.user_id && !!currentUser,
   });
 
-  const getFinancialStatus = () => {
-    if (!data || !data.expenseItem || !currentUser) {
+  const handleNotificationClick = () => {
+    const groupUrl = `/groups/${notification.group_id}`;
+    if (notification.expense_id && (notification.notification_type === 'NEW_EXPENSE' || notification.notification_type === 'EXPENSE_MODIFIED')) {
+      router.push(`${groupUrl}?openExpense=${notification.expense_id}`);
+    } else {
+      router.push(groupUrl);
+    }
+  };
+
+  // Funzione per generare il messaggio principale
+  const renderMessage = () => {
+    if (!data) return null;
+    const { group, actor, expenseItem } = data;
+
+    let actionText = '';
+    let expenseName = '';
+
+    switch (notification.notification_type) {
+      case 'NEW_EXPENSE':
+        actionText = 'ha aggiunto la spesa';
+        expenseName = expenseItem?.[0].desc || `ID ${notification.expense_id}`;
+        break;
+      case 'EXPENSE_MODIFIED':
+        actionText = 'ha modificato la spesa';
+        expenseName = expenseItem?.[0].desc || `ID ${notification.expense_id}`;
+        break;
+      case 'EXPENSE_DELETED':
+        actionText = 'ha cancellato una spesa';
+        break;
+      default:
+        return <p>{notification.message}</p>; // Fallback
+    }
+
+    return (
+      <p className="text-sm text-gray-800">
+        <strong className="font-semibold">{actor.username}</strong>
+        {` ${actionText} `}
+        {expenseName && <strong className="font-semibold">"{expenseName}"</strong>}
+        {` nel gruppo `}
+        <strong className="font-semibold">"{group.group_name}"</strong>.
+      </p>
+    );
+  };
+  
+  // Funzione per generare lo stato finanziario (solo per NEW_EXPENSE)
+  const renderFinancialStatus = () => {
+    if (notification.notification_type !== 'NEW_EXPENSE' || !data || !data.expenseItem || !currentUser) {
       return null;
     }
     const [expense, participants] = data.expenseItem;
     const myParticipation = participants.find(p => p.user_id === currentUser.id);
 
     if (expense.paid_by === currentUser.id) {
-      const myShare = myParticipation?.amount_due || 0;
-      const amountOwedToMe = expense.total_amount - myShare;
-      if (amountOwedToMe > 0.01) {
-        return <p className="font-semibold text-green-600">Ti devono essere restituiti {amountOwedToMe.toFixed(2)} €</p>;
-      }
+      const amount = expense.total_amount - (myParticipation?.amount_due || 0);
+      if (amount > 0.01) return <p className="font-semibold text-green-600">Ti devono essere restituiti {amount.toFixed(2)} €</p>;
     } else if (myParticipation) {
-      const amountIOwe = myParticipation.amount_due || 0;
-      if (amountIOwe > 0.01) {
-        return <p className="font-semibold text-red-600">Devi dare {amountIOwe.toFixed(2)} €</p>;
-      }
+      const amount = myParticipation.amount_due || 0;
+      if (amount > 0.01) return <p className="font-semibold text-red-600">Devi dare {amount.toFixed(2)} €</p>;
     }
     return null;
   }
 
   return (
-    <Link href={`/groups/${notification.group_id}`} className="block">
-        {isLoading || !data ? (
-            <LoadingSkeleton />
-        ) : (
-            <div>
-                <p className="text-sm text-gray-800">
-                    <strong className="font-semibold">{data.actor.username}</strong> ha aggiunto la spesa 
-                    <strong className="font-semibold"> "{data.expenseItem?.[0].desc}"</strong> nel gruppo 
-                    <strong className="font-semibold"> "{data.group.group_name}"</strong>.
-                </p>
-                <div className="mt-1 text-sm">
-                    {getFinancialStatus()}
-                </div>
-            </div>
-        )}
-    </Link>
+    <div onClick={handleNotificationClick} className="block cursor-pointer">
+      {isLoading ? <LoadingSkeleton /> : (
+        <div>
+          {renderMessage()}
+          <div className="mt-1 text-sm">
+            {renderFinancialStatus()}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
