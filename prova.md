@@ -1,10 +1,4 @@
-Certamente. Ho analizzato a fondo il codice che hai fornito (le route, i modelli, la logica di business) per creare un piano di test dettagliato e specifico per la tua implementazione di "SplitSmart".
-
-Questo piano si concentra sui **test di integrazione per il backend**, che verificano che i tuoi endpoint API interagiscano correttamente con la logica di business e il database.
-
----
-
-### Piano di Test per il Backend di SplitSmart (Basato sul Codice Fornito)
+### Testing
 
 Di seguito sono definiti i casi di test essenziali per verificare le funzionalità principali del backend. Ogni caso di test corrisponde a una richiesta API che può essere automatizzata per garantire la stabilità e la correttezza dell'applicazione.
 
