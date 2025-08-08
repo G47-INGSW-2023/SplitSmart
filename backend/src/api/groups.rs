@@ -278,10 +278,11 @@ type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
 #[get("/<gid>/expenses")]
 fn get_expenses(
     gid: i32,
-    _user: User,
+    user: User,
 ) -> Result<Json<Vec<(Expense, Vec<ExpenseParticipation>)>>, Status> {
     let mut conn = establish_connection();
-    // TODO: check user is member
+
+    is_member(gid, user.id)?;
 
     match conn.transaction::<ExpenseList, diesel::result::Error, _>(|conn| {
         let expenses = expenses::table
@@ -310,7 +311,6 @@ fn get_expenses(
 fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Status> {
     let mut conn = establish_connection();
 
-    // TODO: check that the division array sum equals the total
     match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
         let res = expense_participations::table
             .filter(expense_participations::expense_id.eq(exid))
