@@ -38,6 +38,7 @@ fn get_friends(user: User) -> Result<Json<Vec<Friendship>>, Status> {
     }
 }
 
+/// remove friends of requesting user with id `fid`
 #[openapi(tag = "Friends")]
 #[delete("/<fid>")]
 fn remove_friend(user: User, fid: i32) -> Result<Json<Vec<Friendship>>, Status> {
@@ -163,7 +164,8 @@ fn accept_invite(user: User, invite_id: i32) -> Result<Json<FriendInvite>, Statu
     };
 }
 
-// TODO: add notifications
+/// reject friendship invite with id `invite_id`, creates notification to the inviting user that
+/// the request has been rejected
 #[openapi(tag = "Friends")]
 #[put("/invites/<invite_id>/reject")]
 fn reject_invite(user: User, invite_id: i32) -> Result<Json<FriendInvite>, Status> {
