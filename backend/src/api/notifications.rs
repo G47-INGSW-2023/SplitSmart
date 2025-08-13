@@ -14,7 +14,6 @@ pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, O
     openapi_get_routes_spec![settings:get_notifications,read_notification]
 }
 
-/// returns all notifications that the requesting user has received
 #[openapi(tag = "Notifications")]
 #[get("/")]
 fn get_notifications(user: User) -> Result<Json<Vec<Notification>>, Status> {
@@ -34,7 +33,6 @@ fn get_notifications(user: User) -> Result<Json<Vec<Notification>>, Status> {
     }
 }
 
-/// mark notification with id `nid` as read
 #[openapi(tag = "Notifications")]
 #[get("/<nid>/read")]
 fn read_notification(nid: i32, user: User) -> Result<Json<Notification>, Status> {
