@@ -142,13 +142,13 @@ fn get_groups(user: User) -> Result<Json<Vec<Group>>, Status> {
     }
 }
 
-/// returns requested group by id, if the user requesting it is a member
+/// returns requested group by id
 #[openapi(tag = "Groups")]
 #[get("/<gid>")]
 fn get_group(gid: i32, user: User) -> Result<Json<Group>, Status> {
     let mut conn = establish_connection();
 
-    is_member(gid, user.id)?;
+    //is_member(gid, user.id)?;
 
     match groups.filter(id.eq(gid)).first::<Group>(&mut conn) {
         Ok(group) => Ok(Json(group)),
