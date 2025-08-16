@@ -83,7 +83,7 @@ fn view_invites(user: User) -> Result<Json<Vec<FriendInvite>>, Status> {
     }
 }
 
-/// invites a user to the group through mail address, executing user needs to be group admin
+/// invites a friend by mail address
 #[openapi(tag = "Friends")]
 #[post("/invites", data = "<invite>")]
 fn invite_friend(invite: Json<InviteUser>, user: User) -> Result<Json<FriendInvite>, Status> {
