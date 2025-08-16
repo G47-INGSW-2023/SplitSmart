@@ -13,6 +13,7 @@ use crate::{
     models::{FriendInvite, Friendship, User},
     schema::{friend_invites, friendships},
 };
+use diesel::Connection;
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     openapi_get_routes_spec![settings:get_friends,view_invites,invite_friend,accept_invite,reject_invite]
@@ -92,41 +93,47 @@ fn invite_friend(invite: Json<InviteUser>, user: User) -> Result<Json<FriendInvi
 #[openapi(tag = "Friends")]
 #[put("/invites/<invite_id>/accept")]
 fn accept_invite(user: User, invite_id: i32) -> Result<Json<FriendInvite>, Status> {
+    use crate::schema::notifications;
     let mut conn = establish_connection();
 
-    // try to update the single affected friend invite and mark it as accepted
-    let invite = match diesel::update(
-        friend_invites::table
-            // find the unique friend invite
-            .filter(friend_invites::id.eq(invite_id))
-            // check that it's invite to the current user
-            .filter(friend_invites::invited_user_id.eq(user.id)),
-    )
-    .set(friend_invites::invite_status.eq("ACCEPTED"))
-    .get_result::<FriendInvite>(&mut conn)
-    {
-        Ok(v) => v,
+    let res = conn.transaction::<FriendInvite, diesel::result::Error, _>(|conn| {
+        // try to update the single affected friend invite and mark it as accepted
+        let invite = diesel::update(
+            friend_invites::table
+                // find the unique friend invite
+                .filter(friend_invites::id.eq(invite_id))
+                // check that it's invite to the current user
+                .filter(friend_invites::invited_user_id.eq(user.id)),
+        )
+        .set(friend_invites::invite_status.eq("ACCEPTED"))
+        .get_result::<FriendInvite>(conn)?;
+
+        // add friendship to database
+        let friendship = (
+            friendships::user1.eq(invite.inviting_user_id.min(user.id)),
+            friendships::user2.eq(user.id.max(invite.inviting_user_id)),
+        )
+            .insert_into(friendships::table)
+            .execute(conn)?;
+
+        // add notification of FRIENDSHIP_REQUEST_ACCEPTED
+        (
+            notifications::notified_user_id.eq(invite.inviting_user_id),
+            notifications::notification_type.eq("FRIENDSHIP_REQUEST_ACCEPTED"),
+            notifications::user_id.eq(invite.invited_user_id),
+            notifications::creation_date.eq(diesel::dsl::now),
+        )
+            .insert_into(notifications::table)
+            .execute(conn)?;
+
+        Ok(invite)
+    });
+    match res {
+        Ok(v) => Ok(Json(v)),
         Err(Error::NotFound) => return Err(Status::NotFound),
         Err(e) => {
             error!("error trying to update group invite: {:?}", e);
             return Err(Status::InternalServerError);
-        }
-    };
-
-    match (
-        friendships::user1.eq(invite.inviting_user_id.min(user.id)),
-        friendships::user2.eq(user.id.max(invite.inviting_user_id)),
-    )
-        .insert_into(friendships::table)
-        .execute(&mut conn)
-    {
-        Ok(_) => Ok(Json(invite)),
-        Err(e) => {
-            error!(
-                "error trying to create friendship accepting invite: {:?}",
-                e
-            );
-            Err(Status::InternalServerError)
         }
     }
 }
