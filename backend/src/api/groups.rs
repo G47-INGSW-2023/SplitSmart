@@ -28,6 +28,7 @@ pub struct PutUser {
     user_id: i32,
 }
 
+/// helper function to check if user with id `usrid` is member to group with id `gid`
 fn is_member(gid: i32, usrid: i32) -> Result<(), Status> {
     use crate::schema::group_members::dsl::*;
 
@@ -49,6 +50,7 @@ fn is_member(gid: i32, usrid: i32) -> Result<(), Status> {
     }
 }
 
+/// helper function to check if user with id `usrid` is admin to group with id `gid`
 fn is_admin(gid: i32, usrid: i32) -> Result<(), Status> {
     use crate::schema::group_administrators::dsl::*;
 
@@ -70,20 +72,6 @@ fn is_admin(gid: i32, usrid: i32) -> Result<(), Status> {
     }
 }
 
-//| aggiungiMembro(utenteDaAggiungere: Utente): void
-//| rimuoviMembro(utenteDaRimuovere: Utente, utentePerformanteAzione: Utente): boolean
-//O invitaMembro(emailUtenteDaInvitare: String, utenteInvitante: Utente): InvitoGruppo
-//| promuoviAdAmministratore(utenteDaPromuovere: Utente, utentePerformanteAzione: Utente): boolean
-//| revocaAmministratore(utenteDaRevocare: Utente, utentePerformanteAzione: Utente): boolean
-//| aggiungiSpesa(descrizione: String, importo: Decimal, pagatore: Utente, tipoDivisione: TipoDivisioneSpesa, dettagliDivisione: Object): Spesa
-//+ rimuoviSpesa(idSpesa: String/UUID, utentePerformanteAzione: Utente): boolean
-//| modificaDettagliGruppo(nuovoNome: String, nuovaDescrizione: String, utentePerformanteAzione: Utente): boolean
-//+ calcolaSaldiGruppo(): List<Saldo>
-//+ calcolaDebitiSemplificati(): List<String>
-//+ visualizzaSpeseGruppo(filtri: Object): void
-//| cancellaGruppo(utentePerformanteAzione: Utente): boolean
-//| visualizzaDettagliGruppo(): void
-
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutGroup {
     pub name: String,
@@ -91,10 +79,8 @@ pub struct PutGroup {
 }
 
 /// creates a group with the given name and description, adds to the group the user that made the
-/// request, both as member and administrator
-///
+/// request, both as member and administrator.
 /// if successful returns the newly created group
-
 #[openapi(tag = "Groups")]
 #[post("/", data = "<new_group>")]
 fn create_group(new_group: Json<PutGroup>, user: User) -> Result<Json<Group>, Status> {
@@ -220,7 +206,9 @@ fn delete_group(gid: i32, user: User) -> Result<Status, Status> {
     }
 }
 
-// ---------------------------- EXPENSES
+// ############################################################################
+// ###############################|EXPENSES|###################################
+// ############################################################################
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PutExpense {
@@ -267,7 +255,6 @@ fn add_expense(
                 notifications::notification_type.eq("NEW_EXPENSE"),
                 notifications::expense_id.eq(expense.id),
                 notifications::group_id.eq(gid),
-                notifications::creation_date.eq(diesel::dsl::now),
                 notifications::user_id.eq(user.id),
             )
                 .insert_into(notifications::table)
@@ -291,10 +278,11 @@ type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
 #[get("/<gid>/expenses")]
 fn get_expenses(
     gid: i32,
-    _user: User,
+    user: User,
 ) -> Result<Json<Vec<(Expense, Vec<ExpenseParticipation>)>>, Status> {
     let mut conn = establish_connection();
-    // TODO: check user is member
+
+    is_member(gid, user.id)?;
 
     match conn.transaction::<ExpenseList, diesel::result::Error, _>(|conn| {
         let expenses = expenses::table
@@ -323,7 +311,6 @@ fn get_expenses(
 fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Status> {
     let mut conn = establish_connection();
 
-    // TODO: check that the division array sum equals the total
     match conn.transaction::<Expense, diesel::result::Error, _>(|conn| {
         let res = expense_participations::table
             .filter(expense_participations::expense_id.eq(exid))
@@ -336,7 +323,6 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
                 notifications::notification_type.eq("EXPENSE_DELETED"),
                 notifications::group_id.eq(gid),
                 notifications::user_id.eq(user.id),
-                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
@@ -407,7 +393,6 @@ fn update_expense(
                 notifications::expense_id.eq(expense.id),
                 notifications::group_id.eq(gid),
                 notifications::user_id.eq(user.id),
-                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
@@ -423,7 +408,9 @@ fn update_expense(
     }
 }
 
-// ---------------------------- MEMBERS
+// ############################################################################
+// ###############################|MEMBERS|####################################
+// ############################################################################
 
 /// adds a user to the group, can only be performed by an admin
 #[openapi(tag = "Groups")]
@@ -545,6 +532,10 @@ fn remove_member(gid: i32, uid: i32, user: User) -> Result<(), Status> {
         (Err(_), _) | (_, Err(_)) => Err(Status::InternalServerError), // An error occurred
     }
 }
+
+// ############################################################################
+// ################################|ADMINS|####################################
+// ############################################################################
 
 /// promotes member to admin, can only be performed by another admin
 #[openapi(tag = "Groups")]
