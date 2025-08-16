@@ -155,13 +155,13 @@ fn accept_invite(user: User, invite_id: i32) -> Result<Json<FriendInvite>, Statu
         Ok(invite)
     });
     match res {
-        Ok(v) => v,
+        Ok(v) => Ok(Json(v)),
         Err(Error::NotFound) => return Err(Status::NotFound),
         Err(e) => {
             error!("error trying to accept friendship invite: {:?}", e);
             return Err(Status::InternalServerError);
         }
-    };
+    }
 }
 
 /// reject friendship invite with id `invite_id`, creates notification to the inviting user that
