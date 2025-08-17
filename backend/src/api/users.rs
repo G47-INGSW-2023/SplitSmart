@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info]
+    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -72,6 +72,17 @@ fn user_info(uid: i32, _user: User) -> Result<Json<UserInfo>, Status> {
         Err(_) => Err(Status::InternalServerError),
     }
 }
+
+// TODO
+/// set language preference, the `lang` string can be `it` or `eng`
+#[openapi(tag = "User")]
+#[put("/language/<lang>")]
+fn set_language(user: User, lang: String) -> Result<Json<String>, Status> {
+    Err(Status::NotImplemented)
+}
+// ######################################################################################
+// ####################################AUTHENTICATION####################################
+// ######################################################################################
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct LoginRequest {
