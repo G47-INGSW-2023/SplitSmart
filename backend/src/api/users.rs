@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language]
+    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language,activate_account]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -78,6 +78,14 @@ fn user_info(uid: i32, _user: User) -> Result<Json<UserInfo>, Status> {
 #[openapi(tag = "User")]
 #[put("/language/<lang>")]
 fn set_language(user: User, lang: String) -> Result<Json<String>, Status> {
+    Err(Status::NotImplemented)
+}
+
+/// activate account (this is the link received via mail), returns `uid` of user that made the
+/// request
+#[openapi(tag = "User")]
+#[put("/verify/<token>")]
+fn activate_account(user: User, token: i32) -> Result<Json<i32>, Status> {
     Err(Status::NotImplemented)
 }
 // ######################################################################################
@@ -217,6 +225,22 @@ pub fn register(register_data: Json<RegisterRequest>) -> Status {
             Status::InternalServerError
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ChangePasswordRequest {
+    pub oldpassword: String,
+    pub newpassword: String,
+}
+
+// changes password of user that makes the request, returns `uid`
+#[openapi(tag = "User")]
+#[put("/changepassword", data = "<changerequest>")]
+fn change_password(
+    changerequest: Json<ChangePasswordRequest>,
+    user: User,
+) -> Result<Json<i32>, Status> {
+    Err(Status::NotImplemented)
 }
 
 // INVITES
