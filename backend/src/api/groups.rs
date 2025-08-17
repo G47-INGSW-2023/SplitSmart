@@ -219,7 +219,7 @@ pub struct PutExpense {
 }
 
 /// adds a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>
-#[openapi(tag = "Expenses")]
+#[openapi(tag = "GroupExpenses")]
 #[post("/<gid>/expenses", data = "<new_expense>")]
 fn add_expense(
     gid: i32,
@@ -274,7 +274,7 @@ fn add_expense(
 type ExpenseList = Vec<(Expense, Vec<ExpenseParticipation>)>;
 
 /// returns all the information about the group expenses, including the participations
-#[openapi(tag = "Expenses")]
+#[openapi(tag = "GroupExpenses")]
 #[get("/<gid>/expenses")]
 fn get_expenses(
     gid: i32,
@@ -306,7 +306,7 @@ fn get_expenses(
 }
 
 /// deletese group expense, needs to be performed either by expense creator or admin user
-#[openapi(tag = "Expenses")]
+#[openapi(tag = "GroupExpenses")]
 #[delete("/<gid>/expenses/<exid>")]
 fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Status> {
     let mut conn = establish_connection();
@@ -347,7 +347,7 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
 }
 
 /// updates a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>, can only be executed by who inserted the expense or an admin
-#[openapi(tag = "Expenses")]
+#[openapi(tag = "GroupExpenses")]
 #[put("/<gid>/expenses/<exid>", data = "<new_expense>")]
 fn update_expense(
     gid: i32,

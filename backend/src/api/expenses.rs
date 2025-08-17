@@ -113,7 +113,7 @@ fn get_private_expenses(
 }
 
 /// deletes private expense, needs to be performed by expense creator
-#[openapi(tag = "Expenses")]
+#[openapi(tag = "PrivateExpenses")]
 #[delete("/<exid>")]
 fn delete_private_expense(exid: i32, user: User) -> Result<Json<Expense>, Status> {
     let mut conn = establish_connection();
