@@ -1,0 +1,1563 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API for SplitSmartApp",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/groups/": {
+      "get": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "returns all the groups the user is a member of",
+        "operationId": "get_groups",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Group"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "creates a group with the given name and description, adds to the group the user that made the request, both as member and administrator. if successful returns the newly created group",
+        "operationId": "create_group",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}": {
+      "get": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "returns requested group by id",
+        "operationId": "get_group",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "updates existing_group, needs to be executed by an admin of the group",
+        "operationId": "update_group",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "deletes a group, can only be performed by an admin",
+        "operationId": "delete_group",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/members": {
+      "get": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "list of the members of the group",
+        "operationId": "view_members",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupMember"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "adds a user to the group, can only be performed by an admin",
+        "operationId": "add_member",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/members/invite": {
+      "post": {
+        "tags": [
+          "Invite"
+        ],
+        "description": "invites a user to the group through mail address, executing user needs to be group admin",
+        "operationId": "invite_user",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupInvite"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/members/{uid}": {
+      "delete": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "removes a member from the group(and from admin table if he is admin), can only be performed by another admin",
+        "operationId": "remove_member",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/admins/{uid}": {
+      "post": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "promotes member to admin, can only be performed by another admin",
+        "operationId": "promote_to_admin",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "demotes group admin to member, can only be performed by another admin",
+        "operationId": "demote_admin",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/expenses": {
+      "get": {
+        "tags": [
+          "GroupExpenses"
+        ],
+        "description": "returns all the information about the group expenses, including the participations",
+        "operationId": "get_expenses",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": [
+                      {
+                        "$ref": "#/components/schemas/Expense"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/ExpenseParticipation"
+                        }
+                      }
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GroupExpenses"
+        ],
+        "description": "adds a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>",
+        "operationId": "add_expense",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutExpense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/expenses/{exid}": {
+      "put": {
+        "tags": [
+          "GroupExpenses"
+        ],
+        "description": "updates a group expense, the division array specifies how the expense is divided: division: Vec<(i32, f64)>, can only be executed by who inserted the expense or an admin",
+        "operationId": "update_expense",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "exid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutExpense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "GroupExpenses"
+        ],
+        "description": "deletese group expense, needs to be performed either by expense creator or admin user",
+        "operationId": "delete_expense",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "exid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/groups/{gid}/admins": {
+      "get": {
+        "tags": [
+          "Groups"
+        ],
+        "description": "lists all the admins to the group with `gid`",
+        "operationId": "view_admins",
+        "parameters": [
+          {
+            "name": "gid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupMember"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/login": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "description": "user can login here and the authentication is stored with a cookie, the api returns the `uid` that refers to the logged user, which can be useful in other api methods",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/logout": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/register": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/invites": {
+      "get": {
+        "tags": [
+          "Invite"
+        ],
+        "description": "view all invites, regardless of status, about the user making the request",
+        "operationId": "view_invites",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupInvite"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/invites/{invite_id}/accept": {
+      "put": {
+        "tags": [
+          "Invite"
+        ],
+        "description": "accept invite with given id, requires the user to be the one that received the invite",
+        "operationId": "accept_invite",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupInvite"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/invites/{invite_id}/reject": {
+      "put": {
+        "tags": [
+          "Invite"
+        ],
+        "description": "reject invite with given id, requires the user to be the one that received the invite",
+        "operationId": "reject_invite",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupInvite"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/{uid}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "user_info",
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfo"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/notifications/": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "description": "returns all notifications that the requesting user has received",
+        "operationId": "get_notifications",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/notifications/{nid}/read": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "description": "mark notification with id `nid` as read",
+        "operationId": "read_notification",
+        "parameters": [
+          {
+            "name": "nid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/friends/": {
+      "get": {
+        "tags": [
+          "Friends"
+        ],
+        "description": "view all friends of user making the request",
+        "operationId": "get_friends",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Friendship"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/friends/invites": {
+      "get": {
+        "tags": [
+          "Friends"
+        ],
+        "description": "deletes the friendship between the user making the request and the user specified in the url as `<fid>`",
+        "operationId": "view_invites",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FriendInvite"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Friends"
+        ],
+        "description": "invites a friend by mail address",
+        "operationId": "invite_friend",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendInvite"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/friends/invites/{invite_id}/accept": {
+      "put": {
+        "tags": [
+          "Friends"
+        ],
+        "description": "accept invite with given id, requires the user to be the one that received the invite, returns the updated invite",
+        "operationId": "accept_invite",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendInvite"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/friends/invites/{invite_id}/reject": {
+      "put": {
+        "tags": [
+          "Friends"
+        ],
+        "description": "reject friendship invite with id `invite_id`, creates notification to the inviting user that the request has been rejected",
+        "operationId": "reject_invite",
+        "parameters": [
+          {
+            "name": "invite_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendInvite"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/expenses/": {
+      "get": {
+        "tags": [
+          "PrivateExpenses"
+        ],
+        "description": "returns all the information about the user private expenses, the ones paid by him and the ones where he was included, including the participations",
+        "operationId": "get_private_expenses",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": [
+                      {
+                        "$ref": "#/components/schemas/Expense"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/ExpenseParticipation"
+                        }
+                      }
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "PrivateExpenses"
+        ],
+        "description": "adds a private expense, the division array specifies how the expense is divided: 'division: Vec<(i32, f64)>'",
+        "operationId": "add_private_expense",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutExpense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/expenses/{exid}": {
+      "put": {
+        "tags": [
+          "PrivateExpenses"
+        ],
+        "description": "updates a private expense, the division array specifies how the expense is divided: 'division: Vec<(i32, f64)>'",
+        "operationId": "update_private_expense",
+        "parameters": [
+          {
+            "name": "exid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutExpense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "PrivateExpenses"
+        ],
+        "description": "deletes private expense, needs to be performed by expense creator",
+        "operationId": "delete_private_expense",
+        "parameters": [
+          {
+            "name": "exid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Group": {
+        "type": "object",
+        "required": [
+          "creation_date",
+          "group_name",
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "group_name": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string",
+            "nullable": true
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "partial-date-time"
+          }
+        }
+      },
+      "PutGroup": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PutUser": {
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GroupInvite": {
+        "type": "object",
+        "required": [
+          "group_id",
+          "id",
+          "invite_date",
+          "invited_user_id",
+          "inviting_user_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "group_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "invited_user_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inviting_user_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "invite_date": {
+            "type": "string",
+            "format": "partial-date-time"
+          },
+          "invite_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "optional_message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "InviteUser": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Expense": {
+        "type": "object",
+        "required": [
+          "creation_date",
+          "desc",
+          "id",
+          "paid_by",
+          "total_amount"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desc": {
+            "type": "string"
+          },
+          "total_amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "partial-date-time"
+          },
+          "paid_by": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "group_id": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "PutExpense": {
+        "type": "object",
+        "required": [
+          "desc",
+          "division",
+          "paid_by",
+          "total_amount"
+        ],
+        "properties": {
+          "desc": {
+            "type": "string"
+          },
+          "total_amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "paid_by": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "division": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                {
+                  "type": "number",
+                  "format": "double"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          }
+        }
+      },
+      "ExpenseParticipation": {
+        "type": "object",
+        "required": [
+          "expense_id",
+          "user_id"
+        ],
+        "properties": {
+          "expense_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount_due": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        }
+      },
+      "GroupMember": {
+        "type": "object",
+        "required": [
+          "group_id",
+          "user_id"
+        ],
+        "properties": {
+          "group_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user_id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "required": [
+          "email",
+          "registration_date",
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "registration_date": {
+            "type": "string",
+            "format": "partial-date-time"
+          },
+          "last_login": {
+            "type": "string",
+            "format": "partial-date-time",
+            "nullable": true
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "required": [
+          "creation_date",
+          "id",
+          "notified_user_id",
+          "read"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notified_user_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notification_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "group_id": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "expense_id": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "creation_date": {
+            "type": "string",
+            "format": "partial-date-time"
+          },
+          "read": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Friendship": {
+        "type": "object",
+        "required": [
+          "user1",
+          "user2"
+        ],
+        "properties": {
+          "user1": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user2": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FriendInvite": {
+        "type": "object",
+        "required": [
+          "id",
+          "invite_date",
+          "invited_user_id",
+          "inviting_user_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "invited_user_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inviting_user_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "invite_date": {
+            "type": "string",
+            "format": "partial-date-time"
+          },
+          "invite_status": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  }
+}
