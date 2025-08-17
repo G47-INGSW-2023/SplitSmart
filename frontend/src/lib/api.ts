@@ -410,7 +410,6 @@ export const api = {
     return newInvite;
   },
 
-
   /**
    * Accettare la richiesta di amicizia.
    */
@@ -435,5 +434,21 @@ export const api = {
     const updatedInvite = await handleResponse<FriendInvite>(response);
     if (!updatedInvite) throw new Error("Il backend non ha restituito l'invito aggiornato.");
     return updatedInvite;
+  },
+
+  /**
+   * Rimuove un amico.
+   */
+  removeFriend: async (friendId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/friends/${friendId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile rimuovere l'amico.";
+      throw new Error(errorMessage);
+    }
   },
 };
