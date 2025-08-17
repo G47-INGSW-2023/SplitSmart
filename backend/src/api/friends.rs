@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:get_friends,view_invites,invite_friend,accept_invite,reject_invite]
+    openapi_get_routes_spec![settings:remove_friend,get_friends,view_invites,invite_friend,accept_invite,reject_invite]
 }
 
 /// view all friends of user making the request
