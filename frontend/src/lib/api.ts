@@ -322,6 +322,20 @@ export const api = {
 
     console.log(`[API] Invito inviato con successo a ${data.email} per il gruppo ${groupId}`);
   },
+
+  /**
+   * Aggiunge direttamente un utente esistente a un gruppo.
+   */
+  addMemberToGroup: async (groupId: number, userId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId }), // Il backend si aspetta questo payload
+      credentials: 'include',
+    });
+    if (!response.ok) { throw new Error("Impossibile aggiungere il membro."); }
+  },
+
   
   /**
    * Accetta un invito a un gruppo.

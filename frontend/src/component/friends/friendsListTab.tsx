@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
 import { EnrichedFriend } from '@/types';
 import { Button } from '@/component/ui/button'; 
+import { Trash2 } from 'lucide-react';
 
 export default function FriendsListTab() {
   const { user: currentUser } = useAuth();
@@ -67,17 +68,19 @@ export default function FriendsListTab() {
               </div>
               {/* --- PULSANTE DI RIMOZIONE --- */}
               <Button
-                variant="destructive"
+                variant="destructive" // Rosso
                 onClick={() => {
-                  if (window.confirm(`Sei sicuro di voler rimuovere ${friend.username} dalla tua lista di amici?`)) {
+                  if (window.confirm(`Sei sicuro di voler rimuovere ${friend.username}?`)) {
                     removeFriendMutation.mutate(friend.id);
                   }
                 }}
                 disabled={removeFriendMutation.isPending && removeFriendMutation.variables === friend.id}
+                title={`Rimuovi ${friend.username}`} // Aggiunge un tooltip per l'accessibilità
               >
                 {removeFriendMutation.isPending && removeFriendMutation.variables === friend.id 
-                  ? 'Rimozione...' 
-                  : 'Rimuovi'}
+                  ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div> // Spinner
+                  : <Trash2 className="h-4 w-4" /> // Icona del cestino (bianca per via del text-white della variante)
+                }
               </Button>
             </li>
           ))}

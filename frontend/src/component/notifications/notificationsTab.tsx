@@ -57,11 +57,14 @@ export default function NotificationsTab() {
                   <ExpenseNotificationItem notification={notif} />
                 ) : (
                   // Altrimenti, usa la formattazione di base
-                  <p className="text-sm">{formatNotificationMessage(notif)}</p>
+                  <p className="text-sm text-gray-700">{formatNotificationMessage(notif)}</p>
                 )}
                 
                 <p className="text-xs text-gray-500 mt-2">{new Date(notif.creation_date).toLocaleString('it-IT')}</p>
               </div>
+              {!notif.read && (
+                <Button onClick={() => markAsReadMutation.mutate(notif.id)}>✓</Button>
+              )}
             </div>
           </div>
         ))

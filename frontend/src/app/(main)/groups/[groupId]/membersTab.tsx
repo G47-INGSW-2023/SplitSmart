@@ -6,6 +6,7 @@ import { ProcessedMember } from '@/types';
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import MemberDetailModal from './memberDetailModal';
+import AddMemberModal from './addMemberModal'; // Importa il nuovo modale
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
@@ -86,53 +87,18 @@ const MemberRow = ({ member, onAdminActionsClick }: { member: ProcessedMember, o
 }
 
 export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin }: MembersTabProps) {
-  const [inviteEmail, setInviteEmail] = useState('');
   const [selectedMember, setSelectedMember] = useState<ProcessedMember | null>(null);
-  const queryClient = useQueryClient();
 
-  const inviteMutation = useMutation({
-    mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
-    onSuccess: () => {
-      alert('Invito inviato con successo!'); 
-      setInviteEmail('');
-      queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
-    },
-    onError: (error) => {
-      alert(`Errore nell'invio dell'invito: ${error.message}`);
-    }
-  });
-
-  const handleInviteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteEmail.trim()) return;
-    inviteMutation.mutate(inviteEmail.trim());
-  };
-
+  const [isAddMemberModalOpen, setAddMemberModalOpen] = useState(false);
   return (
     <div className="space-y-8">   
-      {isCurrentUserAdmin && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Invita un nuovo membro</h3>
-          <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
-            <Input 
-              type="email" 
-              placeholder="email@esempio.com" 
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-              className="w-full text-gray-500" 
-              disabled={inviteMutation.isPending}
-            />
-            <Button 
-              type="submit" 
-              disabled={inviteMutation.isPending}
-              className="w-full sm:w-auto"
-            >
-              {inviteMutation.isPending ? 'Invio...' : 'Invia Invito'}
-            </Button>
-          </form>
-        </div>
-      )}
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-semibold text-gray-800">Membri del Gruppo</h3>
+        {isCurrentUserAdmin && (
+          <Button onClick={() => setAddMemberModalOpen(true)}>Aggiungi Membro</Button>
+        )}
+      </div>
+
 
        <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Panoramica Saldi Membri</h3>
@@ -155,6 +121,12 @@ export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin
           isCurrentUserAdmin={isCurrentUserAdmin}
         />
       )}
+      <AddMemberModal
+        isOpen={isAddMemberModalOpen}
+        onClose={() => setAddMemberModalOpen(false)}
+        groupId={groupId}
+        currentMemberIds={initialMembers.map(m => m.id)} 
+      />
     </div>
   );
 }
