@@ -105,20 +105,6 @@ pub struct Group {
 }
 
 #[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[diesel(primary_key(user_id))]
-#[diesel(table_name = notification_preferences)]
-#[diesel(check_for_backend(Sqlite))]
-pub struct NotificationPreference {
-    pub user_id: i32,
-    pub notify_new_group_expense: bool,
-    pub notify_group_expense_modified: bool,
-    pub notify_group_invite: bool,
-    pub notify_personal_debt: bool,
-    pub send_email_new_group_expense: bool,
-    pub send_email_group_invite: bool,
-}
-
-#[derive(Queryable, Identifiable, Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[diesel(table_name = notifications)]
 #[diesel(check_for_backend(Sqlite))]
 pub struct Notification {

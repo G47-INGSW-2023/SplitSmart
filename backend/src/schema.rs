@@ -72,18 +72,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    notification_preferences (user_id) {
-        user_id -> Integer,
-        notify_new_group_expense -> Bool,
-        notify_group_expense_modified -> Bool,
-        notify_group_invite -> Bool,
-        notify_personal_debt -> Bool,
-        send_email_new_group_expense -> Bool,
-        send_email_group_invite -> Bool,
-    }
-}
-
-diesel::table! {
     notifications (id) {
         id -> Integer,
         notified_user_id -> Integer,
@@ -125,7 +113,6 @@ diesel::joinable!(group_administrators -> users (user_id));
 diesel::joinable!(group_invites -> groups (group_id));
 diesel::joinable!(group_members -> groups (group_id));
 diesel::joinable!(group_members -> users (user_id));
-diesel::joinable!(notification_preferences -> users (user_id));
 diesel::joinable!(notifications -> expenses (expense_id));
 diesel::joinable!(notifications -> groups (group_id));
 
@@ -138,7 +125,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     group_invites,
     group_members,
     groups,
-    notification_preferences,
     notifications,
     users,
 );
