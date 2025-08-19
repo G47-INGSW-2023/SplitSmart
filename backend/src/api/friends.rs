@@ -44,15 +44,16 @@ fn get_friends(user: User) -> Result<Json<Vec<Friendship>>, Status> {
 fn remove_friend(user: User, fid: i32) -> Result<Json<Vec<Friendship>>, Status> {
     let mut conn = establish_connection();
 
-    match friendships::table
-        .filter(
+    match diesel::delete(
+        friendships::table.filter(
             (friendships::user1
                 .eq(user.id)
                 .and(friendships::user2.eq(fid)))
             .or(friendships::user2.eq(user.id))
             .and(friendships::user1.eq(fid)),
-        )
-        .get_results::<Friendship>(&mut conn)
+        ),
+    )
+    .get_results::<Friendship>(&mut conn)
     {
         Ok(v) => Ok(Json(v)),
         Err(_) => Err(Status::InternalServerError),
@@ -63,24 +64,24 @@ fn remove_friend(user: User, fid: i32) -> Result<Json<Vec<Friendship>>, Status> 
 // -----------------------------------------INVITES---------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct InviteUser {
-    email: String,
-}
-
-/// deletes the friendship between the user making the request and the user specified in the url as
-/// `<fid>`
+/// views the friendship invites that the user received
 #[openapi(tag = "Friends")]
 #[get("/invites")]
 fn view_invites(user: User) -> Result<Json<Vec<FriendInvite>>, Status> {
     let mut conn = establish_connection();
 
-    match diesel::delete(friend_invites::table.filter(friend_invites::invited_user_id.eq(user.id)))
+    match friend_invites::table
+        .filter(friend_invites::invited_user_id.eq(user.id))
         .get_results::<FriendInvite>(&mut conn)
     {
         Ok(v) => Ok(Json(v)),
         Err(_) => Err(Status::InternalServerError),
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct InviteUser {
+    email: String,
 }
 
 /// invites a friend by mail address

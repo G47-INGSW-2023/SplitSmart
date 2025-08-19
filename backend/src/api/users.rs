@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language,activate_account]
+    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language,activate_account,reset_password_request,reset_password]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -149,6 +149,7 @@ fn login(
     }
 }
 
+/// clears authentication cookies
 #[openapi(tag = "User")]
 #[post("/logout")]
 fn logout(jar: &CookieJar<'_>, store: &rocket::State<SessionStore>) -> Status {
@@ -170,6 +171,7 @@ pub struct RegisterRequest {
     pub password: String,
 }
 
+/// registers the user, checking before if the user/email have already been used
 #[openapi(tag = "User")]
 #[post("/register", data = "<register_data>")]
 pub fn register(register_data: Json<RegisterRequest>) -> Status {
@@ -233,7 +235,7 @@ pub struct ChangePasswordRequest {
     pub newpassword: String,
 }
 
-// changes password of user that makes the request, returns `uid`
+/// changes password of user that makes the request, returns `uid`
 #[openapi(tag = "User")]
 #[put("/changepassword", data = "<changerequest>")]
 fn change_password(
@@ -243,7 +245,33 @@ fn change_password(
     Err(Status::NotImplemented)
 }
 
-// INVITES
+/// request reset of a password, will trigger an email being sent with a reset password token
+#[openapi(tag = "User")]
+#[put("/requestpasswordreset")]
+fn reset_password_request(user: User) -> Result<Json<i32>, Status> {
+    Err(Status::NotImplemented)
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct PasswordResetRequest {
+    pub token: String,
+    pub newpassword: String,
+}
+
+/// executes the password reset procedure, user provides a token that was sent by mail, and the new
+/// password
+#[openapi(tag = "User")]
+#[put("/resetpassword", data = "<changerequest>")]
+fn reset_password(
+    user: User,
+    changerequest: Json<PasswordResetRequest>,
+) -> Result<Json<i32>, Status> {
+    Err(Status::NotImplemented)
+}
+
+// ######################################################################################
+//                                        INVITES
+// ######################################################################################
 
 /// view all invites, regardless of status, about the user making the request
 #[openapi(tag = "Invite")]

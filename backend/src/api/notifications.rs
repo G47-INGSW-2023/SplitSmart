@@ -11,7 +11,21 @@ use crate::{
 };
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:get_notifications,read_notification]
+    openapi_get_routes_spec![settings:get_notifications,read_notification, get_notification_preferences,set_notification_preferences]
+}
+
+/// returns notification preferences of user, options are: `NONE`, `PERSONAL`, `ALL`
+#[openapi(tag = "Notifications")]
+#[get("/preferences")]
+fn get_notification_preferences(user: User) -> Result<Json<String>, Status> {
+    Err(Status::NotImplemented)
+}
+
+/// sets notification preferences of user, options are: `NONE`, `PERSONAL`, `ALL`
+#[openapi(tag = "Notifications")]
+#[put("/preferences/<preference>")]
+fn set_notification_preferences(user: User, preference: String) -> Result<Json<String>, Status> {
+    Err(Status::NotImplemented)
 }
 
 /// returns all notifications that the requesting user has received
