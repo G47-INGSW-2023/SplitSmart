@@ -465,4 +465,46 @@ export const api = {
       throw new Error(errorMessage);
     }
   },
+
+  getPrivateExpenses: async (): Promise<ExpenseWithParticipants[]> => {
+    // Il backend ha questo montato sotto un nuovo modulo `expenses.rs`,
+    // quindi l'URL sarà /expenses.
+    const response = await fetch(`${API_PROXY_URL}/expenses`, { credentials: 'include' });
+    return (await handleResponse<ExpenseWithParticipants[]>(response)) || [];
+  },
+
+   addPrivateExpense: async (data: AddExpenseData): Promise<Expense> => {
+    const response = await fetch(`${API_PROXY_URL}/expenses`, {
+      // --- CORREZIONI QUI ---
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data), // Invia i dati della spesa
+      credentials: 'include',
+    });
+    const newExpense = await handleResponse<Expense>(response);
+    if (!newExpense) throw new Error("Il backend non ha restituito la spesa privata creata.");
+    return newExpense;
+  },
+
+  updatePrivateExpense: async (expenseId: number, data: AddExpenseData): Promise<Expense> => {
+    const response = await fetch(`${API_PROXY_URL}/expenses/${expenseId}`, {
+      // --- CORREZIONI QUI ---
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data), // Invia i dati della spesa
+      credentials: 'include',
+    });
+    const updatedExpense = await handleResponse<Expense>(response);
+    if (!updatedExpense) throw new Error("Il backend non ha restituito la spesa privata aggiornata.");
+    return updatedExpense;
+  },
+
+  // deletePrivateExpense è corretto perché DELETE non ha bisogno di un corpo
+  deletePrivateExpense: async (expenseId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/expenses/${expenseId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error("Impossibile eliminare la spesa privata.");
+  },
 };
