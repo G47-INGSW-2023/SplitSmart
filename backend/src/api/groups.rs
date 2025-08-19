@@ -256,6 +256,7 @@ fn add_expense(
                 notifications::expense_id.eq(expense.id),
                 notifications::group_id.eq(gid),
                 notifications::user_id.eq(user.id),
+                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
@@ -323,6 +324,7 @@ fn delete_expense(gid: i32, exid: i32, user: User) -> Result<Json<Expense>, Stat
                 notifications::notification_type.eq("EXPENSE_DELETED"),
                 notifications::group_id.eq(gid),
                 notifications::user_id.eq(user.id),
+                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
@@ -393,6 +395,7 @@ fn update_expense(
                 notifications::expense_id.eq(expense.id),
                 notifications::group_id.eq(gid),
                 notifications::user_id.eq(user.id),
+                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
