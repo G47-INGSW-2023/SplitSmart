@@ -3,78 +3,61 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { AddExpenseData, EnrichedFriend } from '@/types';
+import { AddExpenseData, EnrichedFriend, ExpenseWithParticipants } from '@/types';
 import { Modal } from '@/component/ui/modal';
 import { Input } from '@/component/ui/input';
 import { Button } from '@/component/ui/button';
 import { Textarea } from '@/component/ui/textarea';
 import { useAuth } from '@/lib/authContext';
 
-interface AddFriendExpenseModalProps {
+interface EditPrivateExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
   friend: EnrichedFriend;
+  expenseData: ExpenseWithParticipants;
 }
 
 type DivisionType = 'equal' | 'manual';
 
-export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFriendExpenseModalProps) {
+export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expenseData }: EditPrivateExpenseModalProps) {
+  const [expense, participants] = expenseData;
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  // Stati del Form
-  const [description, setDescription] = useState('');
-  const [totalAmount, setTotalAmount] = useState<number | ''>('');
-  const [paidById, setPaidById] = useState(currentUser?.id || null);
-  const [divisionType, setDivisionType] = useState<DivisionType>('equal');
-  
-  // Stato per la Divisione Manuale
+  const [description, setDescription] = useState(expense.desc);
+  const [totalAmount, setTotalAmount] = useState<number | ''>(expense.total_amount);
+  const [paidById, setPaidById] = useState<number | null>(expense.paid_by);
+  const [divisionType, setDivisionType] = useState<DivisionType>('manual');
   const [manualAmounts, setManualAmounts] = useState<Record<number, number | ''>>({});
-
-  // I partecipanti sono solo due: tu e il tuo amico
-  const participants = useMemo(() => {
-    if (!currentUser) return [friend];
-    // Ordina per mettere sempre l'utente corrente per primo
-    return [currentUser, friend].sort((a, b) => a.id === currentUser.id ? -1 : 1);
-  }, [currentUser, friend]);
-
-  // Effetto per resettare il form quando si apre o si chiude
-  useEffect(() => {
-    if (isOpen && currentUser) {
-      // Imposta i valori di default all'apertura
-      setDescription('');
-      setTotalAmount('');
-      setPaidById(currentUser.id);
-      setDivisionType('equal');
-      setManualAmounts({});
-    }
-  }, [isOpen, currentUser]);
   
-  // Mutazione per aggiungere la spesa
-  const addExpenseMutation = useMutation({
-    mutationFn: (data: AddExpenseData) => api.addPrivateExpense(data),
+  // Pre-compila il form con i dati esistenti
+  useEffect(() => {
+    if (isOpen) {
+      const initialAmounts: Record<number, number | ''> = {};
+      participants.forEach(p => { initialAmounts[p.user_id] = p.amount_due ?? ''; });
+      setManualAmounts(initialAmounts);
+    }
+  }, [isOpen, participants]);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: AddExpenseData) => api.updatePrivateExpense(expense.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['private-expenses', currentUser?.id] });
-      queryClient.invalidateQueries({ queryKey: ['friend-details', friend.id, currentUser?.id] });
-      alert("Spesa aggiunta con successo!");
+      queryClient.invalidateQueries({ queryKey: ['private-expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-details', friend.id] });
+      alert("Spesa modificata!");
       onClose();
-    },
-    onError: (error) => {
-      alert(`Errore nell'aggiunta della spesa: ${error.message}`);
     },
   });
 
-  // Logica per calcolare la somma manuale e verificare se è corretta
   const { manualSum, totalIsCorrect } = useMemo(() => {
-    const numericTotal = Number(totalAmount) || 0;
-    const sum = Object.values(manualAmounts).reduce((acc: number, amount) => acc + (Number(amount) || 0), 0);
-    return { 
-      manualSum: sum, 
-      totalIsCorrect: numericTotal > 0 && Math.abs(sum - numericTotal) < 0.01 
-    };
-  }, [manualAmounts, totalAmount]);
-
-  // Gestione dell'invio del form
+      const numericTotal = Number(totalAmount) || 0;
+      const sum = Object.values(manualAmounts).reduce((acc: number, amount) => acc + (Number(amount) || 0), 0);
+      return { 
+        manualSum: sum, 
+        totalIsCorrect: numericTotal > 0 && Math.abs(sum - numericTotal) < 0.01 
+      };
+    }, [manualAmounts, totalAmount]);
+    
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!paidById || !currentUser) return;
@@ -111,18 +94,18 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
       paid_by: paidById,
       division,
     };
-    addExpenseMutation.mutate(expenseData);
+    updateMutation.mutate(expenseData);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Aggiungi spesa con ${friend.username}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={`Modifica: ${description}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Textarea 
           value={description} 
           onChange={e => setDescription(e.target.value)} 
           placeholder="Descrizione (es. Cena pizza)" 
           required 
-          disabled={addExpenseMutation.isPending} 
+          disabled={updateMutation.isPending} 
         />
         
         <div className="grid grid-cols-2 gap-4">
@@ -138,7 +121,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
               required 
               min="0.01" 
               step="0.01" 
-              disabled={addExpenseMutation.isPending} 
+              disabled={updateMutation.isPending} 
             />
           </div>
           <div>
@@ -148,7 +131,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
               value={paidById || ''} 
               onChange={(e) => setPaidById(Number(e.target.value))} 
               required 
-              disabled={addExpenseMutation.isPending}
+              disabled={updateMutation.isPending}
               className="w-full h-10 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-600"
             >
               <option value={currentUser?.id}>{currentUser?.username} (Tu)</option>
@@ -174,7 +157,6 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
                 <Input 
                   id={`amount-${p.id}`} 
                   type="number" 
-                  value={manualAmounts[p.id] || ''} 
                   onChange={e => setManualAmounts({...manualAmounts, [p.id]: e.target.value === '' ? '' : Number(e.target.value)})} 
                   className="w-28 text-gray-500" 
                   placeholder="0.00"
@@ -193,9 +175,9 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
         )}
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={addExpenseMutation.isPending}>Annulla</Button>
-          <Button type="submit" disabled={addExpenseMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}>
-            {addExpenseMutation.isPending ? 'Salvataggio...' : 'Aggiungi Spesa'}
+          <Button type="button" variant="secondary" onClick={onClose} disabled={updateMutation.isPending}>Annulla</Button>
+          <Button type="submit" disabled={updateMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}>
+            {updateMutation.isPending ? 'Salvataggio...' : 'Aggiungi Spesa'}
           </Button>
         </div>
       </form>

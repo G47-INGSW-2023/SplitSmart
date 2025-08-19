@@ -55,6 +55,8 @@ export interface Expense {
 }
 
 export interface ExpenseParticipation {
+  username: ReactNode;
+  id: any;
   expense_id: number;
   user_id: number;
   amount_due: number | null;
