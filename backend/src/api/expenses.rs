@@ -60,6 +60,7 @@ fn add_private_expense(new_expense: Json<PutExpense>, user: User) -> Result<Json
                 notifications::notification_type.eq("NEW_EXPENSE"),
                 notifications::expense_id.eq(expense.id),
                 notifications::user_id.eq(user.id),
+                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
@@ -129,6 +130,7 @@ fn delete_private_expense(exid: i32, user: User) -> Result<Json<Expense>, Status
                 notifications::notified_user_id.eq(ep.user_id),
                 notifications::notification_type.eq("EXPENSE_DELETED"),
                 notifications::user_id.eq(user.id),
+                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;
@@ -191,6 +193,7 @@ fn update_private_expense(
                 notifications::notification_type.eq("NEW_EXPENSE"),
                 notifications::expense_id.eq(expense.id),
                 notifications::user_id.eq(user.id),
+                notifications::creation_date.eq(diesel::dsl::now),
             )
                 .insert_into(notifications::table)
                 .execute(conn)?;

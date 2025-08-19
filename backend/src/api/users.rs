@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use rocket::{http::Cookie, http::CookieJar, post};
 
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
-    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language,activate_account,reset_password_request,reset_password]
+    openapi_get_routes_spec![settings:login,logout,register,view_invites,accept_invite,reject_invite,user_info,set_language,activate_account]
 }
 
 //| registra(nome: String, email: String, password: String): void
@@ -258,8 +258,7 @@ pub struct PasswordResetRequest {
     pub newpassword: String,
 }
 
-/// executes the password reset procedure, user provides a token that was sent by mail, and the new
-/// password
+/// executes the password reset procedure, user provides a token that was sent by mail
 #[openapi(tag = "User")]
 #[put("/resetpassword", data = "<changerequest>")]
 fn reset_password(
