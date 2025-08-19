@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/authContext';
 import { EnrichedFriend } from '@/types';
 import { Button } from '@/component/ui/button'; 
 import { Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function FriendsListTab() {
   const { user: currentUser } = useAuth();
@@ -58,30 +59,14 @@ export default function FriendsListTab() {
       {friends && friends.length > 0 ? (
         <ul>
           {friends.map(friend => (
-            <li 
-              key={friend.id} 
-              className="p-4 border-b last:border-b-0 flex items-center justify-between"
-            >
-              <div>
+            <li key={friend.id}>
+              <Link
+                href={`/friends/${friend.id}`}
+                className="block bg-white p-4 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+              >
                 <p className="font-medium text-gray-800">{friend.username}</p>
                 <p className="text-sm text-gray-500">{friend.email}</p>
-              </div>
-              {/* --- PULSANTE DI RIMOZIONE --- */}
-              <Button
-                variant="destructive" // Rosso
-                onClick={() => {
-                  if (window.confirm(`Sei sicuro di voler rimuovere ${friend.username}?`)) {
-                    removeFriendMutation.mutate(friend.id);
-                  }
-                }}
-                disabled={removeFriendMutation.isPending && removeFriendMutation.variables === friend.id}
-                title={`Rimuovi ${friend.username}`} // Aggiunge un tooltip per l'accessibilità
-              >
-                {removeFriendMutation.isPending && removeFriendMutation.variables === friend.id 
-                  ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div> // Spinner
-                  : <Trash2 className="h-4 w-4" /> // Icona del cestino (bianca per via del text-white della variante)
-                }
-              </Button>
+              </Link>
             </li>
           ))}
         </ul>

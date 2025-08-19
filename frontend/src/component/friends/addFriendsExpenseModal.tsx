@@ -57,10 +57,10 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Aggiungi spesa con ${friend.username}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrizione" required />
-        <Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value))} placeholder="0.00 €" required />
+        <Input value={description} className="text-gray-700" onChange={e => setDescription(e.target.value)} placeholder="Descrizione" required />
+        <Input type="number" value={totalAmount} className="text-gray-700" onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value))} placeholder="0.00 €" required />
         
-        <fieldset className="flex gap-4">
+        <fieldset className="flex gap-4 text-gray-800">
           <legend>Pagato da:</legend>
           <label><input type="radio" name="payer" value={currentUser?.id} checked={paidById === currentUser?.id} onChange={() => setPaidById(currentUser!.id)} /> Tu</label>
           <label><input type="radio" name="payer" value={friend.id} checked={paidById === friend.id} onChange={() => setPaidById(friend.id)} /> {friend.username}</label>

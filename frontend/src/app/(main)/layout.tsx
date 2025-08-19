@@ -10,9 +10,6 @@ const sidebarNavItems = [
     title: "Gruppi",
     href: "/groups",
   },
-  { title: "Saldi",
-    href: "/balances" 
-  },
   {
     title: "Notifiche",
     href: "/notifications",
