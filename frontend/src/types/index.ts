@@ -1,5 +1,7 @@
 // types/index.ts
 
+import { ReactNode } from "react";
+
 export interface LoginCredentials {
   email: string;
   password: string;

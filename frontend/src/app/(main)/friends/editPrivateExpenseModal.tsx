@@ -87,6 +87,7 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
         .filter(([, amount]) => Number(amount) > 0)
         .map(([userId, amount]) => [Number(userId), Number(amount) as number]);
     }
+    
 
     const expenseData: AddExpenseData = {
       desc: description,
@@ -98,26 +99,21 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Modifica: ${description}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={`Modifica: ${expense.desc}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Textarea 
-          value={description} 
-          onChange={e => setDescription(e.target.value)} 
-          placeholder="Descrizione (es. Cena pizza)" 
-          required 
-          disabled={updateMutation.isPending} 
-        />
-        
+        <div>
+          <label htmlFor="friend-exp-desc" className="text-black">Descrizione</label>
+          <Input id="friend-exp-desc" className="text-gray-500" value={description} onChange={e => setDescription(e.target.value)} required disabled={updateMutation.isPending} />
+        </div>
+      
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="friend-exp-amount" className="block text-sm font-medium text-gray-700 mb-1">Importo (€)</label>
-            <Input 
-              id="friend-exp-amount"
+            <label htmlFor="friend-exp-amount" className="text-black">Importo Totale (€)</label>
+            <Input id="friend-exp-amount"
               className='text-gray-500'
               type="number" 
               value={totalAmount} 
               onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value))} 
-              placeholder="0.00" 
               required 
               min="0.01" 
               step="0.01" 
@@ -132,7 +128,7 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
               onChange={(e) => setPaidById(Number(e.target.value))} 
               required 
               disabled={updateMutation.isPending}
-              className="w-full h-10 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-600"
+              className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500"
             >
               <option value={currentUser?.id}>{currentUser?.username} (Tu)</option>
               <option value={friend.id}>{friend.username}</option>
@@ -141,11 +137,11 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
         </div>
 
         <div className="flex gap-4 border-b pb-2">
-          <button type="button" onClick={() => setDivisionType('equal')} className={`transition-colors ${divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Dividi 50/50</button>
-          <button type="button" onClick={() => setDivisionType('manual')} className={`transition-colors ${divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Dividi Manualmente</button>
+          <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
+          <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-60 overflow-y-auto">
           {divisionType === 'equal' ? (
             <div className="text-center p-4 bg-gray-100 rounded-md">
               <p className="text-gray-700">Ognuno paga <span className="font-bold text-gray-900">{((Number(totalAmount) || 0) / 2).toFixed(2)} €</span></p>
@@ -157,10 +153,9 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
                 <Input 
                   id={`amount-${p.id}`} 
                   type="number" 
+                  value={manualAmounts[p.id] || ''} 
                   onChange={e => setManualAmounts({...manualAmounts, [p.id]: e.target.value === '' ? '' : Number(e.target.value)})} 
-                  className="w-28 text-gray-500" 
-                  placeholder="0.00"
-                  step="0.01"
+                  className="w-28 text-gray-600" 
                 />
               </div>
             ))
@@ -170,14 +165,14 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
         {divisionType === 'manual' && (Number(totalAmount) || 0) > 0 && (
           <div className={`p-2 rounded text-sm ${totalIsCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             <p>Totale inserito: {manualSum.toFixed(2)} € di {(Number(totalAmount) || 0).toFixed(2)} €</p>
-            {!totalIsCorrect && <p className="font-medium">La somma delle parti non corrisponde al totale.</p>}
+            {!totalIsCorrect && <p>La somma delle parti non corrisponde al totale.</p>}
           </div>
         )}
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="secondary" onClick={onClose} disabled={updateMutation.isPending}>Annulla</Button>
           <Button type="submit" disabled={updateMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}>
-            {updateMutation.isPending ? 'Salvataggio...' : 'Aggiungi Spesa'}
+            {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
           </Button>
         </div>
       </form>
