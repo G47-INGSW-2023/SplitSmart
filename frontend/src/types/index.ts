@@ -163,3 +163,16 @@ export interface EnrichedFriendInvite extends FriendInvite {
   inviting_user_name: string;
 }
 export type EnrichedFriend = User;
+
+export type TimelineItem = {
+  type: 'private_expense';
+  date: string;
+  data: ExpenseWithParticipants;
+} | {
+  type: 'group_balance';
+  date: string;
+  data: {
+    group: Group;
+    balance: number; 
+  };
+};
