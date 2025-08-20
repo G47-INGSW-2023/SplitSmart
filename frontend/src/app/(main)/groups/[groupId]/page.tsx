@@ -8,7 +8,7 @@ interface GroupDetailPageProps {
 }
 
 // 1. Rendi la funzione del componente `async`
-export default async function GroupDetailPage(props: GroupDetailPageProps) {
+export default function GroupDetailPage(props: GroupDetailPageProps) {
   
   // 2. "Srotola" la prop `params`
   const params = use(props.params);
