@@ -5,7 +5,8 @@
 address = "127.0.0.1"
 port = 8000
 
-# Configurazione per l'ambiente di produzione (usata da Render con --release)
+# Configurazione per l'ambiente di produzione
+# Questi valori verranno SOVRASCRITTI dalle variabili d'ambiente su Render
 [release]
 address = "0.0.0.0"
-port = env("PORT", 8000)
+port = 8000 
