@@ -1,0 +1,11 @@
+# backend/Rocket.toml
+
+# Configurazione di default per lo sviluppo locale
+[default]
+address = "127.0.0.1"
+port = 8000
+
+# Configurazione per l'ambiente di produzione (usata da Render con --release)
+[release]
+address = "0.0.0.0"
+port = env("PORT", 8000)
