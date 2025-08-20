@@ -88,7 +88,7 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">Invita tramite Email</h4>
           <form onSubmit={handleInviteSubmit} className="flex gap-2">
-            <Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@esempio.com" required disabled={inviteMutation.isPending} />
+            <Input type="email" className='text-gray-700' value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@esempio.com" required disabled={inviteMutation.isPending} />
             <Button type="submit" disabled={inviteMutation.isPending}>{inviteMutation.isPending ? 'Invio...' : 'Invia'}</Button>
           </form>
         </div>
