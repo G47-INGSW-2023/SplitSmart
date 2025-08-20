@@ -77,7 +77,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
       const allUserDetails = await Promise.all(
         membersResponse.map(async m => ({...await api.getUserDetails(m.user_id), id: m.user_id}))
       );
-      const userMap = new Map(allUserDetails.map(u => [u.id, u]));
+      // const userMap = new Map(allUserDetails.map(u => [u.id, u]));
 
       const membersWithNetBalance = allUserDetails.map(user => ({
         ...user,

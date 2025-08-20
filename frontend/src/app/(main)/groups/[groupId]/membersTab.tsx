@@ -4,11 +4,8 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { ProcessedMember } from '@/types';
 import { Button } from '@/component/ui/button';
-import { Input } from '@/component/ui/input';
 import MemberDetailModal from './memberDetailModal';
 import AddMemberModal from './addMemberModal'; // Importa il nuovo modale
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
 
 interface MembersTabProps {
   groupId: number;

@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
 import { Input } from '../ui/input'; // Assicurati che il percorso sia corretto
 import { Button } from '../ui/button'; // Assicurati che il percorso sia corretto

@@ -1,15 +1,13 @@
 'use client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
 import { EnrichedFriend } from '@/types';
-import { Button } from '@/component/ui/button'; 
-import { Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FriendsListTab() {
   const { user: currentUser } = useAuth();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   
   const { data: friends, isLoading } = useQuery<EnrichedFriend[]>({
     queryKey: ['friends-list', currentUser?.id], 
@@ -38,18 +36,18 @@ export default function FriendsListTab() {
     enabled: !!currentUser,
   });
 
-   const removeFriendMutation = useMutation({
-    mutationFn: (friendId: number) => api.removeFriend(friendId),
-    onSuccess: () => {
-      // Se la rimozione ha successo, invalida la cache della lista amici
-      // per forzare un ri-caricamento e aggiornare la UI.
-      queryClient.invalidateQueries({ queryKey: ['friends-list', currentUser?.id] });
-      alert("Amico rimosso con successo.");
-    },
-    onError: (error) => {
-      alert(`Errore: ${error.message}`);
-    }
-  });
+  //  const removeFriendMutation = useMutation({
+  //   mutationFn: (friendId: number) => api.removeFriend(friendId),
+  //   onSuccess: () => {
+  //     // Se la rimozione ha successo, invalida la cache della lista amici
+  //     // per forzare un ri-caricamento e aggiornare la UI.
+  //     queryClient.invalidateQueries({ queryKey: ['friends-list', currentUser?.id] });
+  //     alert("Amico rimosso con successo.");
+  //   },
+  //   onError: (error) => {
+  //     alert(`Errore: ${error.message}`);
+  //   }
+  // });
 
   
   if (isLoading) return <p>Caricamento lista amici...</p>;

@@ -7,7 +7,6 @@ import { api } from '@/lib/api';
 import { Modal } from '@/component/ui/modal';
 import { useAuth } from '@/lib/authContext';
 import { Button } from '@/component/ui/button';
-import { Textarea } from '@/component/ui/textarea';
 import { Input } from '@/component/ui/input';
 
 interface EditExpenseModalProps {
