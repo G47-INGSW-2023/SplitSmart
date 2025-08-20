@@ -1,17 +1,23 @@
-import GroupDetailClient from './groupDetailClient';
+import { use } from 'react';
+import GroupDetailClient from './groupDetailClient'; // Importa il Client Component
 
 interface GroupDetailPageProps {
-  params: {
+  params: Promise<{
     groupId: string;
-  };
+  }>;
 }
 
-export default function GroupDetailPage({ params }: GroupDetailPageProps) {
-  const groupId = parseInt(params.groupId, 10);
+// 1. Rendi la funzione del componente `async`
+export default async function GroupDetailPage(props: GroupDetailPageProps) {
   
+  // 2. "Srotola" la prop `params`
+  const params = use(props.params);
+  const groupId = parseInt(params.groupId, 10);
+
   if (isNaN(groupId)) {
     return <div>ID del gruppo non valido.</div>;
   }
 
+  // 3. Passa l'ID numerico al Client Component
   return <GroupDetailClient groupId={groupId} />;
 }
