@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Input } from '@/component/ui/input';
 import { Button } from '@/component/ui/button';
 
 export default function AddFriendTab() {
   const [email, setEmail] = useState('');
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   
   const inviteMutation = useMutation({
     mutationFn: (email: string) => api.inviteFriend({ email }),

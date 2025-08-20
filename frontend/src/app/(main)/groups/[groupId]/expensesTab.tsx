@@ -4,9 +4,7 @@ import { ExpenseWithParticipants } from '@/types';
 import { Button } from '@/component/ui/button';
 import { useState } from 'react';
 import AddExpenseModal from './addExpenseModal'; 
-import ExpenseDetailModal from './expensesDetailModal';
 import { useAuth } from '@/lib/authContext'; 
-import EditExpenseModal from './editExpenseModal';
 
 interface ExpensesTabProps {
   groupId: number;
@@ -15,7 +13,7 @@ interface ExpensesTabProps {
   onSelectExpense: (expense: ExpenseWithParticipants) => void;
 }
 
-export default function ExpensesTab({ groupId, initialExpenses, isCurrentUserAdmin, onSelectExpense }: ExpensesTabProps) {
+export default function ExpensesTab({ groupId, initialExpenses, onSelectExpense }: ExpensesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user: currentUser } = useAuth();
 

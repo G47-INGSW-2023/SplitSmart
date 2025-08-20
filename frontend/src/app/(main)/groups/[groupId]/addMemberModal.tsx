@@ -61,12 +61,12 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
   // Mutazione per aggiungere un amico direttamente
   const addFriendMutation = useMutation({
     mutationFn: (userId: number) => api.addMemberToGroup(groupId, userId),
-    onSuccess: (data, userId) => {
+    onSuccess: () => {
       alert(`Amico aggiunto al gruppo!`);
       // Invalidiamo la query principale per aggiornare la lista dei membri in background
       queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
     },
-    onError: (error, userId) => alert(`Errore nell'aggiunta dell'amico: ${error.message}`),
+    onError: (error, ) => alert(`Errore nell'aggiunta dell'amico: ${error.message}`),
   });
 
   const handleInviteSubmit = (e: React.FormEvent) => {

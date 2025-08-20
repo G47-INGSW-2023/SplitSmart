@@ -35,7 +35,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
   const participants = useMemo(() => {
     if (!currentUser) return [friend];
     // Ordina per mettere sempre l'utente corrente per primo
-    return [currentUser, friend].sort((a, b) => a.id === currentUser.id ? -1 : 1);
+    return [currentUser, friend].sort((a) => a.id === currentUser.id ? -1 : 1);
   }, [currentUser, friend]);
 
   // Effetto per resettare il form quando si apre o si chiude

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { GroupInvite, EnrichedGroupInvite } from '@/types';
+import { EnrichedGroupInvite } from '@/types';
 import { Button } from '@/component/ui/button';
 import { useAuth } from '@/lib/authContext';
 
@@ -70,7 +70,7 @@ export default function InvitesTab() {
           <div key={invite.id} className="p-4 border-b last:border-b-0">
             <p className="text-sm text-gray-800">
               {/* 4. Mostra i nomi invece degli ID */}
-              <strong className="font-semibold">{invite.inviting_user_name}</strong> ti ha invitato a unirti al gruppo <strong className="font-semibold">"{invite.group_name}"</strong>.
+              <strong className="font-semibold">{invite.inviting_user_name}</strong> ti ha invitato a unirti al gruppo <strong className="font-semibold">&quot;{invite.group_name}&quot;</strong>.
             </p>
             <p className="text-xs text-gray-500 mt-1">{new Date(invite.invite_date).toLocaleString('it-IT')}</p>
             

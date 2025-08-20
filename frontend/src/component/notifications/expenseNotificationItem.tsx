@@ -2,9 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Notific, User, Group, ExpenseWithParticipants } from '@/types';
+import { Notific, ExpenseWithParticipants } from '@/types';
 import { useAuth } from '@/lib/authContext';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation'; 
 
 interface ExpenseNotificationItemProps {
@@ -89,9 +88,9 @@ export default function ExpenseNotificationItem({ notification }: ExpenseNotific
       <p className="text-sm text-gray-800">
         <strong className="font-semibold">{actor.username}</strong>
         {` ${actionText} `}
-        {expenseName && <strong className="font-semibold">"{expenseName}"</strong>}
+        {expenseName && <strong className="font-semibold">&quot;{expenseName}&quot;</strong>}
         {` nel gruppo `}
-        <strong className="font-semibold">"{group.group_name}"</strong>.
+        <strong className="font-semibold">&quot;{group.group_name}&quot;</strong>.
       </p>
     );
   };

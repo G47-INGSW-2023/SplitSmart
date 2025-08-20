@@ -2,7 +2,7 @@
 
 import { ComponentProps } from 'react';
 
-export interface InputProps extends ComponentProps<'input'> {}
+export type InputProps = ComponentProps<'input'>;
 
 export const Input = ({ className, ...props }: InputProps) => {
   return (

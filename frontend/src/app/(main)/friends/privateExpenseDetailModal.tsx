@@ -37,8 +37,6 @@ export default function PrivateExpenseDetailModal({ isOpen, onClose, expenseData
   const memberIdToNameMap = new Map(participantsList.map(m => [m.id, m.username]));
   const payerName = memberIdToNameMap.get(expense.paid_by) || `Sconosciuto`;
 
-  // L'utente può modificare/cancellare una spesa privata solo se l'ha pagata lui
-  const canPerformActions = expense.paid_by === currentUser?.id;
 
   return (
     /* <Modal isOpen={isOpen} onClose={onClose} title={`Dettagli: ${expense.desc}`}>

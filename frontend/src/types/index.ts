@@ -58,7 +58,7 @@ export interface Expense {
 
 export interface ExpenseParticipation {
   username: ReactNode;
-  id: any;
+  id: number;
   expense_id: number;
   user_id: number;
   amount_due: number | null;
@@ -162,4 +162,4 @@ export interface InviteFriendData {
 export interface EnrichedFriendInvite extends FriendInvite {
   inviting_user_name: string;
 }
-export interface EnrichedFriend extends User {} 
+export type EnrichedFriend = User;
