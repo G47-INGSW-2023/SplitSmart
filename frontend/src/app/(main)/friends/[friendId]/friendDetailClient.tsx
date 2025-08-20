@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { Button } from '@/component/ui/button';
 import { ExpenseWithParticipants, EnrichedFriend } from '@/types';
 import AddFriendExpenseModal from '@/component/friends/addFriendsExpenseModal';
-import ExpenseDetailModal from '../../groups/[groupId]/expensesDetailModal';
 import PrivateExpenseDetailModal from '../privateExpenseDetailModal';
 import EditPrivateExpenseModal from '../editPrivateExpenseModal';
 
@@ -158,22 +157,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
         onClose={() => setAddModalOpen(false)}
         friend={friend}
       />
-
-      {/* Modale di Dettaglio Spesa (riutilizzato) */}
-      {selectedExpense && (
-        <ExpenseDetailModal
-          expenseData={selectedExpense}
-          isOpen={!!selectedExpense}
-          onClose={() => setSelectedExpense(null)}
-          // Passiamo un groupId fittizio o null, il modale non lo usa per le azioni
-          // che non sono specifiche di un gruppo (come promuovere admin)
-          groupId={-1} // -1 per indicare che non è in un gruppo
-          isCurrentUserAdmin={false} // Le spese private non hanno admin di gruppo
-          // onEditClick richiederà di creare un modale EditFriendExpenseModal
-          onEditClick={() => alert("Funzionalità di modifica da implementare per le spese private.")}
-        />
-      )}
-
        {selectedExpense && (
         <PrivateExpenseDetailModal
           isOpen={!!selectedExpense}
