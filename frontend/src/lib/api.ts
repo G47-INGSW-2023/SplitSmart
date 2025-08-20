@@ -322,6 +322,20 @@ export const api = {
 
     console.log(`[API] Invito inviato con successo a ${data.email} per il gruppo ${groupId}`);
   },
+
+  /**
+   * Aggiunge direttamente un utente esistente a un gruppo.
+   */
+  addMemberToGroup: async (groupId: number, userId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId }), // Il backend si aspetta questo payload
+      credentials: 'include',
+    });
+    if (!response.ok) { throw new Error("Impossibile aggiungere il membro."); }
+  },
+
   
   /**
    * Accetta un invito a un gruppo.
@@ -410,7 +424,6 @@ export const api = {
     return newInvite;
   },
 
-
   /**
    * Accettare la richiesta di amicizia.
    */
@@ -435,5 +448,63 @@ export const api = {
     const updatedInvite = await handleResponse<FriendInvite>(response);
     if (!updatedInvite) throw new Error("Il backend non ha restituito l'invito aggiornato.");
     return updatedInvite;
+  },
+
+  /**
+   * Rimuove un amico.
+   */
+  removeFriend: async (friendId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/friends/${friendId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.detail || errorData.message || "Impossibile rimuovere l'amico.";
+      throw new Error(errorMessage);
+    }
+  },
+
+  getPrivateExpenses: async (): Promise<ExpenseWithParticipants[]> => {
+    // Il backend ha questo montato sotto un nuovo modulo `expenses.rs`,
+    // quindi l'URL sarà /expenses.
+    const response = await fetch(`${API_PROXY_URL}/expenses`, { credentials: 'include' });
+    return (await handleResponse<ExpenseWithParticipants[]>(response)) || [];
+  },
+
+   addPrivateExpense: async (data: AddExpenseData): Promise<Expense> => {
+    const response = await fetch(`${API_PROXY_URL}/expenses`, {
+      // --- CORREZIONI QUI ---
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data), // Invia i dati della spesa
+      credentials: 'include',
+    });
+    const newExpense = await handleResponse<Expense>(response);
+    if (!newExpense) throw new Error("Il backend non ha restituito la spesa privata creata.");
+    return newExpense;
+  },
+
+  updatePrivateExpense: async (expenseId: number, data: AddExpenseData): Promise<Expense> => {
+    const response = await fetch(`${API_PROXY_URL}/expenses/${expenseId}`, {
+      // --- CORREZIONI QUI ---
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data), // Invia i dati della spesa
+      credentials: 'include',
+    });
+    const updatedExpense = await handleResponse<Expense>(response);
+    if (!updatedExpense) throw new Error("Il backend non ha restituito la spesa privata aggiornata.");
+    return updatedExpense;
+  },
+
+  // deletePrivateExpense è corretto perché DELETE non ha bisogno di un corpo
+  deletePrivateExpense: async (expenseId: number): Promise<void> => {
+    const response = await fetch(`${API_PROXY_URL}/expenses/${expenseId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error("Impossibile eliminare la spesa privata.");
   },
 };
