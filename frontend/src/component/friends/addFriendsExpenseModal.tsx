@@ -7,7 +7,6 @@ import { AddExpenseData, EnrichedFriend } from '@/types';
 import { Modal } from '@/component/ui/modal';
 import { Input } from '@/component/ui/input';
 import { Button } from '@/component/ui/button';
-import { Textarea } from '@/component/ui/textarea';
 import { useAuth } from '@/lib/authContext';
 
 interface AddFriendExpenseModalProps {
@@ -117,28 +116,23 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Aggiungi spesa con ${friend.username}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Textarea 
-          value={description} 
-          onChange={e => setDescription(e.target.value)} 
-          placeholder="Descrizione (es. Cena pizza)" 
-          required 
-          disabled={addExpenseMutation.isPending} 
-        />
+        <div>
+          <label htmlFor="exp-desc" className="text-black">Descrizione</label>
+          <Input id="exp-desc"  className="text-gray-500" placeholder="Inserisci una descrizione" value={description} onChange={e => setDescription(e.target.value)} required />
+        </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="friend-exp-amount" className="block text-sm font-medium text-gray-700 mb-1">Importo (€)</label>
+            <label htmlFor="friend-exp-amount" className="text-black">Importo Totale (€)</label>
             <Input 
               id="friend-exp-amount"
               className='text-gray-500'
               type="number" 
               value={totalAmount} 
-              onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value))} 
-              placeholder="0.00" 
+              onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value) || 0)} 
               required 
               min="0.01" 
               step="0.01" 
-              disabled={addExpenseMutation.isPending} 
             />
           </div>
           <div>
@@ -149,7 +143,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
               onChange={(e) => setPaidById(Number(e.target.value))} 
               required 
               disabled={addExpenseMutation.isPending}
-              className="w-full h-10 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-600"
+              className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500"
             >
               <option value={currentUser?.id}>{currentUser?.username} (Tu)</option>
               <option value={friend.id}>{friend.username}</option>
@@ -158,8 +152,8 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
         </div>
 
         <div className="flex gap-4 border-b pb-2">
-          <button type="button" onClick={() => setDivisionType('equal')} className={`transition-colors ${divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Dividi 50/50</button>
-          <button type="button" onClick={() => setDivisionType('manual')} className={`transition-colors ${divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Dividi Manualmente</button>
+          <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
+          <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
         </div>
 
         <div className="space-y-2">
@@ -195,7 +189,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="secondary" onClick={onClose} disabled={addExpenseMutation.isPending}>Annulla</Button>
           <Button type="submit" disabled={addExpenseMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}>
-            {addExpenseMutation.isPending ? 'Salvataggio...' : 'Aggiungi Spesa'}
+            {addExpenseMutation.isPending ? 'Salvataggio...' : 'Crea Spesa'}
           </Button>
         </div>
       </form>

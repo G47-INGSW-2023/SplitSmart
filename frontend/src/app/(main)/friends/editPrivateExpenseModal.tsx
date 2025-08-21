@@ -97,6 +97,12 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
     updateMutation.mutate(expenseData);
   };
 
+  // Creiamo una lista dei partecipanti per usarla nella UI
+  const participantDetails = useMemo(() => {
+    if (!currentUser) return [friend];
+    return [currentUser, friend];
+  }, [currentUser, friend]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Modifica: ${expense.desc}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,7 +152,7 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
               <p className="text-gray-700">Ognuno paga <span className="font-bold text-gray-900">{((Number(totalAmount) || 0) / 2).toFixed(2)} €</span></p>
             </div>
           ) : (
-            participants.map(p => (
+            participantDetails.map(p => (
               <div key={p.id} className="flex items-center gap-3 p-2">
                 <label htmlFor={`amount-${p.id}`} className="flex-grow text-gray-800">{p.username}{p.id === currentUser?.id ? ' (La tua quota)' : ''}</label>
                 <Input 

@@ -4,18 +4,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Notific } from '@/types';
 import { formatNotificationMessage } from '@/lib/utils';
-import { Button } from '@/component/ui/button';
 import ExpenseNotificationItem from './expenseNotificationItem'; // Importa il nuovo componente
+import PrivateExpenseNotificationItem from './privateExpenseNotificationItem'; // Per spese private
 import { useAuth } from '@/lib/authContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function NotificationsTab() {
   const queryClient = useQueryClient();
   const { refetchNotifications } = useAuth();
 
+  const markedAsRead = useRef(false);
+  
   const { data: notifications, isLoading } = useQuery<Notific[]>({
     queryKey: ['notifications'],
     queryFn: api.getNotifications,
+    select: (data) => {
+      return data.sort((a, b) => 
+        new Date(b.creation_date).getTime() - new Date(a.creation_date).getTime()
+      );
+    },
   });
 
   const markAsReadMutation = useMutation({
@@ -24,24 +31,25 @@ export default function NotificationsTab() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       refetchNotifications();
     },
+    onError: (error) => console.error("Errore nel segnare la notifica come letta:", error),
   });
 
   useEffect(() => {
-    if (notifications) {
+    if (notifications && !markedAsRead.current && notifications.some(n => !n.read)) {
       const unreadNotifications = notifications.filter(n => !n.read);
-      if (unreadNotifications.length > 0) {
-        console.log(`Segno ${unreadNotifications.length} notifiche come lette...`);
-        // Esegui la mutazione per ogni notifica non letta
-        unreadNotifications.forEach(notif => {
-          markAsReadMutation.mutate(notif.id);
-        });
-      }
+      console.log(`Segno ${unreadNotifications.length} notifiche come lette...`);
+      
+      unreadNotifications.forEach(notif => {
+        markAsReadMutation.mutate(notif.id);
+      });
+
+      markedAsRead.current = true;
     }
-  }, [notifications]);
+  }, [notifications, markAsReadMutation]); 
 
   if (isLoading) return <p>Caricamento notifiche...</p>;
 
-  const notificationTypes = ['NEW_EXPENSE', 'EXPENSE_MODIFIED', 'EXPENSE_DELETED'];
+  const expenseNotificationTypes = ['NEW_EXPENSE', 'EXPENSE_MODIFIED', 'EXPENSE_DELETED'];
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -51,20 +59,20 @@ export default function NotificationsTab() {
             <div className="flex items-start gap-4">
               <div className="flex-grow">
                 
-                {/* --- DISPATCHER SEMPLIFICATO --- */}
-                {notificationTypes.includes(notif.notification_type || '') ? (
-                  // Se è una notifica di gruppo, usa il componente intelligente
+                {expenseNotificationTypes.includes(notif.notification_type || '') ? (
+                // Se è una notifica di spesa, controlla se è di gruppo o privata
+                notif.group_id ? (
                   <ExpenseNotificationItem notification={notif} />
                 ) : (
-                  // Altrimenti, usa la formattazione di base
-                  <p className="text-sm text-gray-700">{formatNotificationMessage(notif)}</p>
-                )}
+                  <PrivateExpenseNotificationItem notification={notif} />
+                )
+              ) : (
+                // Per tutte le altre notifiche (es. amicizia), usa il formattatore di base
+                <p className="text-sm text-gray-800">{formatNotificationMessage(notif)}</p>
+              )}
                 
                 <p className="text-xs text-gray-500 mt-2">{new Date(notif.creation_date).toLocaleString('it-IT')}</p>
               </div>
-              {!notif.read && (
-                <Button onClick={() => markAsReadMutation.mutate(notif.id)}>✓</Button>
-              )}
             </div>
           </div>
         ))
