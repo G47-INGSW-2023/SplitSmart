@@ -105,15 +105,15 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Modifica: ${expense.desc}`}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="sm:space-y-4">
         <div>
-          <label htmlFor="friend-exp-desc" className="text-black">Descrizione</label>
+          <label htmlFor="friend-exp-desc" className="text-black block text-sm font-medium sm:mb-1">Descrizione</label>
           <Input id="friend-exp-desc" className="text-gray-500" value={description} onChange={e => setDescription(e.target.value)} required disabled={updateMutation.isPending} />
         </div>
       
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-4">
           <div>
-            <label htmlFor="friend-exp-amount" className="text-black">Importo Totale (€)</label>
+            <label htmlFor="friend-exp-amount" className="text-black block text-sm font-medium sm:mb-1">Importo Totale (€)</label>
             <Input id="friend-exp-amount"
               className='text-gray-500'
               type="number" 
@@ -126,7 +126,7 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
             />
           </div>
           <div>
-            <label htmlFor="friend-exp-payer" className="block text-sm font-medium text-gray-700 mb-1">Pagato da</label>
+            <label htmlFor="friend-exp-payer" className="block text-sm font-medium text-gray-700 sm:mb-1">Pagato da</label>
             <select 
               id="friend-exp-payer" 
               value={paidById || ''} 
@@ -141,7 +141,7 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
           </div>
         </div>
 
-        <div className="flex gap-4 border-b pb-2">
+        <div className="flex gap-4 border-b sm:pb-2">
           <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
           <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
         </div>
@@ -153,14 +153,14 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
             </div>
           ) : (
             participantDetails.map(p => (
-              <div key={p.id} className="flex items-center gap-3 p-2">
+              <div key={p.id} className="flex flex-col sm:flex-row sm:items-center sm:gap-3 sm:p-2">
                 <label htmlFor={`amount-${p.id}`} className="flex-grow text-gray-800">{p.username}{p.id === currentUser?.id ? ' (La tua quota)' : ''}</label>
                 <Input 
                   id={`amount-${p.id}`} 
                   type="number" 
                   value={manualAmounts[p.id] || ''} 
                   onChange={e => setManualAmounts({...manualAmounts, [p.id]: e.target.value === '' ? '' : Number(e.target.value)})} 
-                  className="w-28 text-gray-600" 
+                  className="w-full sm:w-28 text-gray-600" 
                 />
               </div>
             ))
@@ -174,10 +174,22 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={updateMutation.isPending}>Annulla</Button>
-          <Button type="submit" disabled={updateMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:pt-4 border-t">
+          <Button 
+            type="submit" 
+            disabled={updateMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}
+            className="w-full sm:w-auto"
+          >
             {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
+          </Button>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onClose} 
+            disabled={updateMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            Annulla
           </Button>
         </div>
       </form>
