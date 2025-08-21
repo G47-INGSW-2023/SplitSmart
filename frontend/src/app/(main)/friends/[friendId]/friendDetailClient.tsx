@@ -1,5 +1,5 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
 import { useState } from 'react';
@@ -10,6 +10,7 @@ import PrivateExpenseDetailModal from '../../../../component/friends/privateExpe
 import EditPrivateExpenseModal from '../../../../component/friends/editPrivateExpenseModal';
 import { TimelineItem } from '@/types'; // Importa il nuovo tipo
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface FriendDetailClientProps {
   friendId: number;
@@ -21,6 +22,26 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
   const [selectedExpense, setSelectedExpense] = useState<ExpenseWithParticipants | null>(null);
   const [editingExpense, setEditingExpense] = useState<ExpenseWithParticipants | null>(null);
 
+  const queryClient = useQueryClient(); // Inizializza il query client
+  const router = useRouter(); // Importa e inizializza il router per il reindirizzamento
+
+  const removeFriendMutation = useMutation({
+    mutationFn: () => api.removeFriend(friendId),
+    onSuccess: () => {
+      // 1. Invalida la cache della lista amici per aggiornarla
+      queryClient.invalidateQueries({ queryKey: ['friends-list', currentUser?.id] });
+      // 2. Invalida anche la cache delle spese private, perché potrebbero cambiare i saldi
+      queryClient.invalidateQueries({ queryKey: ['private-expenses', currentUser?.id] });
+      
+      alert("Amico rimosso con successo.");
+      
+      // 3. Reindirizza l'utente alla pagina principale degli amici
+      router.push('/friends');
+    },
+    onError: (error) => {
+      alert(`Errore durante la rimozione dell'amico: ${error.message}`);
+    }
+  });
 
   const handleOpenEditModal = (expenseData: ExpenseWithParticipants) => {
     setSelectedExpense(null);
@@ -118,22 +139,40 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-3xl font-bold text-gray-800">Riepilogo con {friend.username}</h1>
-
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Riepilogo con {friend.username}</h1>
+        </div>
+        {/* Contenitore per il pulsante di azione */}
+        <div className="flex-shrink-0 ml-4">
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (window.confirm(`Sei sicuro di voler rimuovere ${friend.username} dalla tua lista di amici?`)) {
+                removeFriendMutation.mutate();
+              }
+            }}
+            disabled={removeFriendMutation.isPending}
+            className="w-auto"
+          >
+            {removeFriendMutation.isPending ? 'Rimozione...' : 'Rimuovi Amico'}
+          </Button>
+        </div>
+      </div>
       <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-      <p className="text-lg text-gray-600">
-        {balance > 0.01 
-          ? `In totale, ${friend.username} ti deve:` 
-          : balance < -0.01 
-            ? `In totale, tu devi a ${friend.username}:` 
-            : 'Siete in pari'}
-      </p>
-      {Math.abs(balance) > 0.01 && (
-        <p className={`text-4xl font-bold mt-2 ${balanceColor}`}>
-          {Math.abs(balance).toFixed(2)} €
+        <p className="text-lg text-gray-600">
+          {balance > 0.01 
+            ? `In totale, ${friend.username} ti deve:` 
+            : balance < -0.01 
+              ? `In totale, tu devi a ${friend.username}:` 
+              : 'Siete in pari'}
         </p>
-      )}
-    </div>
+        {Math.abs(balance) > 0.01 && (
+          <p className={`text-4xl font-bold mt-2 ${balanceColor}`}>
+            {Math.abs(balance).toFixed(2)} €
+          </p>
+        )}
+      </div>
 
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-800">Cronologia Spese</h2>
