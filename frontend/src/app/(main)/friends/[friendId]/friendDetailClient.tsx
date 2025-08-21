@@ -9,7 +9,7 @@ import AddFriendExpenseModal from '@/component/friends/addFriendsExpenseModal';
 import PrivateExpenseDetailModal from '../../../../component/friends/privateExpenseDetailModal';
 import EditPrivateExpenseModal from '../../../../component/friends/editPrivateExpenseModal';
 import { TimelineItem } from '@/types'; 
-import { MoreVertical, Trash2 } from 'lucide-react'; 
+import { Trash2 } from 'lucide-react'; 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -173,7 +173,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
       {/* --- SEZIONE DELLA LISTA SPESE AGGIORNATA --- */}
       <ul className="space-y-3">        
         {timeline.length > 0 ? timeline.map((item) => {
-          const key = item.type === 'private_expense' ? `exp-${item.data[0].id}` : `grp-${item.data.group.id}`;
           if (item.type === 'private_expense') {
             const expenseItem = item.data;
             const [expense, participants] = expenseItem;

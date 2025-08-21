@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
-import { EnrichedFriend, ExpenseParticipation } from '@/types';
+import { EnrichedFriend, ExpenseParticipation, ExpenseWithParticipants } from '@/types';
 import Link from 'next/link';
 
 interface FriendWithBalance extends EnrichedFriend {
@@ -43,7 +43,7 @@ export default function FriendsListTab() {
       const friendIds = friendships.map(f => f.user1 === currentUser.id ? f.user2 : f.user1);
       const friends = await Promise.all(friendIds.map(id => api.getUserDetails(id).then(details => ({ id, ...details }))));
 
-      const groupExpensesMap = new Map<number, any[]>();
+      const groupExpensesMap = new Map<number, ExpenseWithParticipants[]>();
       await Promise.all(myGroups.map(async (group) => {
         const expenses = await api.getGroupExpenses(group.id);
         groupExpensesMap.set(group.id, expenses);

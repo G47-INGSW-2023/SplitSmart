@@ -60,9 +60,7 @@ export default function FriendRequestsTab() {
       queryClient.invalidateQueries({ queryKey: ['friend-invites-enriched'] });
     }
   });
-
-  const isLoadingAction = acceptMutation.isPending || rejectMutation.isPending;
-
+  
   // --- ISTRUZIONE `return` MANCANTE AGGIUNTA QUI ---
   if (isLoading) {
     return <LoadingSkeleton />;
