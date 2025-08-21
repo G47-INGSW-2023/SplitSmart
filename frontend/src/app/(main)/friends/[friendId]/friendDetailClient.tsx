@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { Button } from '@/component/ui/button';
 import { ExpenseWithParticipants, EnrichedFriend } from '@/types';
 import AddFriendExpenseModal from '@/component/friends/addFriendsExpenseModal';
-import PrivateExpenseDetailModal from '../privateExpenseDetailModal';
-import EditPrivateExpenseModal from '../editPrivateExpenseModal';
+import PrivateExpenseDetailModal from '../../../../component/friends/privateExpenseDetailModal';
+import EditPrivateExpenseModal from '../../../../component/friends/editPrivateExpenseModal';
 import { TimelineItem } from '@/types'; // Importa il nuovo tipo
 import Link from 'next/link';
 

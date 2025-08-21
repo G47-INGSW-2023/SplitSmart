@@ -6,6 +6,10 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 
 const sidebarNavItems = [
+  { 
+    title: "Amici", 
+    href: "/friends" 
+  },
   {
     title: "Gruppi",
     href: "/groups",
@@ -17,10 +21,6 @@ const sidebarNavItems = [
   {
     title: "Profilo",
     href: "/profile",
-  },
-  { 
-    title: "Amici", 
-    href: "/friends" 
   },
 ];
 

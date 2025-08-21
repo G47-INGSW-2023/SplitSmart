@@ -5,15 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { ExpenseWithParticipants, ProcessedMember} from '@/types';
 import { useAuth } from '@/lib/authContext';
-import ExpensesTab from './expensesTab';
-import MembersTab from './membersTab';   
+import ExpensesTab from '../../../../component/groups/expenses/expensesTab';
+import MembersTab from '../../../../component/groups/members/membersTab';   
 import { Button } from '@/component/ui/button';
-import DeleteGroupModal from './deleteGroupModal';
-import EditGroupModal from './editGroupModal';
+import DeleteGroupModal from '../../../../component/groups/settings/deleteGroupModal';
+import EditGroupModal from '../../../../component/groups/settings/editGroupModal';
 import { simplifyDebts } from '@/lib/utils';
 import { useSearchParams, useRouter } from 'next/navigation';
-import ExpenseDetailModal from './expensesDetailModal';
-import EditExpenseModal from './editExpenseModal';
+import ExpenseDetailModal from '../../../../component/groups/expenses/expensesDetailModal';
+import EditExpenseModal from '../../../../component/groups/expenses/editExpenseModal';
 
 
 type Tab = 'expenses' | 'members';

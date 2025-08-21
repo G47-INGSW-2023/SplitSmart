@@ -1,7 +1,7 @@
 'use client';
 
-import { GroupList } from '@/component/groups/groupList';
-import { CreateGroupModal } from '@/component/groups/createGroupModal';
+import { GroupList } from '@/component/groups/settings/groupList';
+import { CreateGroupModal } from '@/component/groups/settings/createGroupModal';
 import { Button } from '@/component/ui/button';
 import { useState } from 'react';
 
