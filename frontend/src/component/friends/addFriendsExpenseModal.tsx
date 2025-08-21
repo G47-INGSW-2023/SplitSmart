@@ -7,7 +7,6 @@ import { AddExpenseData, EnrichedFriend } from '@/types';
 import { Modal } from '@/component/ui/modal';
 import { Input } from '@/component/ui/input';
 import { Button } from '@/component/ui/button';
-import { Textarea } from '@/component/ui/textarea';
 import { useAuth } from '@/lib/authContext';
 
 interface AddFriendExpenseModalProps {

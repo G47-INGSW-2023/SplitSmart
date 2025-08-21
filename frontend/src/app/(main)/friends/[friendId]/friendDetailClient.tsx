@@ -142,7 +142,7 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
 
       {/* --- SEZIONE DELLA LISTA SPESE AGGIORNATA --- */}
       <ul className="space-y-3">        
-        {timeline.length > 0 ? timeline.map((item, index) => {
+        {timeline.length > 0 ? timeline.map((item) => {
       
           if (item.type === 'private_expense') {
             const expenseItem = item.data;

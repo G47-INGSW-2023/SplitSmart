@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Notific } from '@/types';
 import { formatNotificationMessage } from '@/lib/utils';
-import { Button } from '@/component/ui/button';
 import ExpenseNotificationItem from './expenseNotificationItem'; // Importa il nuovo componente
 import PrivateExpenseNotificationItem from './privateExpenseNotificationItem'; // Per spese private
 import { useAuth } from '@/lib/authContext';
