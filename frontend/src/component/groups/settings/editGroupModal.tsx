@@ -60,9 +60,10 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
             onChange={(e) => setName(e.target.value)} 
             required 
             disabled={updateMutation.isPending}
-            className="text-gray-500"
+            className="text-gray-600"
           />
         </div>
+
         <div>
           <label htmlFor="edit-group-description" className="block text-sm font-medium text-gray-700 mb-1"> Descrizione (opzionale) </label>
           <Textarea 
@@ -72,22 +73,27 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
             disabled={updateMutation.isPending}
           />
         </div>
-        
+
         {updateMutation.isError && (
           <p className="text-sm text-red-500">{updateMutation.error.message}</p>
         )}
 
-        <div className="flex justify-end gap-2 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t">
+          <Button 
+            type="submit" 
+            disabled={updateMutation.isPending}
+            className="w-full sm:w-auto" // A tutta larghezza su mobile
+          >
+            {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
+          </Button>
           <Button 
             type="button" 
             variant="secondary" 
             onClick={onClose} 
             disabled={updateMutation.isPending}
+            className="w-full sm:w-auto" // A tutta larghezza su mobile
           >
             Annulla
-          </Button>
-          <Button type="submit" disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
           </Button>
         </div>
       </form>

@@ -43,7 +43,7 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
 
       return Promise.all(friendDetailsPromises);
     },
-    enabled: !!currentUser,
+    enabled: isOpen &&  !!currentUser,
   });
 
 
@@ -82,24 +82,24 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
   }, [friends, currentMemberIds]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi Membri al Gruppo">
+    <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi membri">
       <div className="space-y-6">
         {/* Sezione Invito via Email */}
         <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Invita tramite Email</h4>
-          <form onSubmit={handleInviteSubmit} className="flex gap-2">
-            <Input type="email" className='text-gray-700' value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@esempio.com" required disabled={inviteMutation.isPending} />
-            <Button type="submit" disabled={inviteMutation.isPending}>{inviteMutation.isPending ? 'Invio...' : 'Invia'}</Button>
+          <h4 className="text-lg font-semibold text-gray-800 mb-2">Invita tramite Email</h4>
+          <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
+            <Input type="email" className='text-gray-700 w-full' value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="email@esempio.com" required disabled={inviteMutation.isPending} />
+            <Button type="submit" className="w-full sm:w-auto flex-shrink-0" disabled={inviteMutation.isPending}>{inviteMutation.isPending ? 'Invio...' : 'Invia'}</Button>
           </form>
         </div>
 
         {/* Sezione Aggiungi Amici */}
         <div className="border-t pt-4">
-          <h4 className="font-semibold text-gray-800 mb-2">Aggiungi dalla tua lista amici</h4>
-          {isLoadingFriends ? <p>Caricamento amici...</p> : (
-            <ul className="space-y-2 max-h-60 overflow-y-auto">
+          <h4 className="text-lg font-semibold text-gray-800 mb-2">Aggiungi dalla tua lista amici</h4>
+          {isLoadingFriends ? <p className="text-center text-gray-500 py-4">Caricamento amici...</p> : (
+            <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
               {friendsToAdd.map(friend => (
-                <li key={friend.id} className="flex items-center justify-between p-2 rounded hover:bg-gray-50">
+                <li key={friend.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-md hover:bg-gray-50">
                   <div>
                     <p className="font-medium text-gray-900">{friend.username}</p>
                     <p className="text-sm text-gray-500">{friend.email}</p>
@@ -107,6 +107,7 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
                   <Button
                     onClick={() => addFriendMutation.mutate(friend.id)}
                     disabled={addFriendMutation.isPending && addFriendMutation.variables === friend.id}
+                    className="w-full sm:w-auto flex-shrink-0 mt-2 sm:mt-0"
                   >
                     {addFriendMutation.isPending && addFriendMutation.variables === friend.id ? '...' : '+ Aggiungi'}
                   </Button>

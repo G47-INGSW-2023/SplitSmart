@@ -141,7 +141,7 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
           </div>
         </div>
 
-        <div className="flex gap-4 border-b sm:pb-2">
+        <div className="flex gap-4 border-b py-2">
           <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
           <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
         </div>
