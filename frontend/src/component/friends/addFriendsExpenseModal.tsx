@@ -115,36 +115,6 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
 
 
   return (
-
-    /*
-        {divisionType === 'manual' && (Number(totalAmount) || 0) > 0 && (
-          <div className={`p-2 rounded text-sm ${totalIsCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            <p>Totale inserito: {manualSum.toFixed(2)} € di {(Number(totalAmount) || 0).toFixed(2)} €</p>
-            {!totalIsCorrect && <p>La somma delle parti non corrisponde al totale.</p>}
-          </div>
-        )}
-
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:pt-4 border-t">
-          <Button 
-            type="submit" 
-            disabled={updateMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}
-            className="w-full sm:w-auto"
-          >
-            {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
-          </Button>
-          <Button 
-            type="button" 
-            variant="secondary" 
-            onClick={onClose} 
-            disabled={updateMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            Annulla
-          </Button>
-        </div>
-      </form>
-    </Modal>
-    */
     <Modal isOpen={isOpen} onClose={onClose} title={`Aggiungi spesa con ${friend.username}`}>
       <form onSubmit={handleSubmit} className="sm:space-y-4">
         <div>
@@ -182,7 +152,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
           </div>
         </div>
 
-        <div className="flex gap-4 border-b sm:pb-2">
+        <div className="flex gap-4 border-b py-2">
           <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
           <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
         </div>

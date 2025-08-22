@@ -119,19 +119,25 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi una nuova spesa">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    /* 
+   
+        
+        
+    */
+    <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi una spesa">
+      <form onSubmit={handleSubmit} className="sm: space-y-4">
         <div>
-          <label htmlFor="exp-desc" className="text-black">Descrizione</label>
+          <label htmlFor="exp-desc" className="text-black block text-sm font-medium sm:mb-1">Descrizione</label>
           <Input id="exp-desc"  className="text-gray-500" placeholder="Inserisci una descrizione" value={description} onChange={e => setDescription(e.target.value)} required />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-4">
           <div>
-            <label htmlFor="exp-amount" className="text-black">Importo Totale (€)</label>
+            <label htmlFor="exp-amount" className="text-black block text-sm font-medium sm:mb-1">Importo Totale (€)</label>
             <Input id="exp-amount" type="number" className="text-gray-500" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value) || 0)} required min="0.01" step="0.01" />
           </div>
           <div>
-            <label htmlFor="exp-payer" className="block text-sm font-medium text-gray-700 mb-1">Pagato da</label>
+            <label htmlFor="exp-payer" className="block text-sm font-medium text-gray-700 sm:mb-1">Pagato da</label>
             <select
               id="exp-payer"
               value={paidById || ''}
@@ -150,31 +156,30 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
           </div>
         </div>
 
-        <div className="flex gap-4 border-b pb-2">
-          <button type="button" onClick={() => setDivisionType('equal')} className={divisionType === 'equal' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Equa</button>
-          <button type="button" onClick={() => setDivisionType('manual')} className={divisionType === 'manual' ? 'font-bold text-blue-600' : 'text-gray-700'}>Divisione Manuale</button>
+        <div className="flex border-b">
+          <button type="button" onClick={() => setDivisionType('equal')} className={`flex-1 py-2 text-sm font-medium text-center transition-colors ${divisionType === 'equal' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Divisione Equa</button>
+          <button type="button" onClick={() => setDivisionType('manual')} className={`flex-1 py-2 text-sm font-medium text-center transition-colors ${divisionType === 'manual' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Divisione Manuale</button>
         </div>
 
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+        <div className="space-y-1 max-h-48 sm:max-h-60 overflow-y-auto pr-2">
           {isLoadingMembers && <p>Caricamento membri...</p>}
 
           {divisionType === 'equal' && members?.map(member => (
-            <div key={member.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-100">
-              <input type="checkbox" id={`member-${member.id}`} checked={selectedMembers.has(member.id)} onChange={() => handleToggleMember(member.id)} />
+            <div key={member.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100">
+              <input type="checkbox" id={`member-${member.id}`} checked={selectedMembers.has(member.id)} onChange={() => handleToggleMember(member.id)} className="h-4 w-4 rounded"/>
               <label htmlFor={`member-${member.id}`} className="flex-grow text-gray-800">{member.username}</label>
               {selectedMembers.has(member.id) && totalAmount && (
-                <span className="text-gray-500">{(totalAmount / selectedMembers.size).toFixed(2)} €</span>
+                <span className="text-gray-500 text-sm">{(totalAmount / selectedMembers.size).toFixed(2)} €</span>
               )}
             </div>
           ))}
-
           {divisionType === 'manual' && members?.map(member => (
-            <div key={member.id} className="flex items-center gap-3 p-2">
-              <label htmlFor={`amount-${member.id}`} className="flex-grow text-gray-800">{member.username}</label>
+            <div key={member.id} className="flex flex-col sm:flex-row sm:items-center sm:gap-3 sm:p-2">
+              <label htmlFor={`amount-${member.id}`} className="flex-grow text-gray-800 mb-1 sm:mb-0">{member.username}{member.id === currentUser?.id ? ' (La tua quota)' : ''}</label>
               <Input 
                 id={`amount-${member.id}`} 
                 type="number" 
-                className="w-28, text-gray-600" 
+                className="w-full sm:w-28 text-gray-600 text-right" 
                 placeholder="0.00" 
                 step="0.01"
                 value={manualAmounts[member.id] || ''}
@@ -184,18 +189,30 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
           ))}
         </div>
 
-        {divisionType === 'manual' && totalAmount && (
+        {divisionType === 'manual' && (Number(totalAmount) || 0) > 0 && (
           <div className={`p-2 rounded text-sm ${totalIsCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             <p>Totale inserito: {manualSum.toFixed(2)} € di {(Number(totalAmount) || 0).toFixed(2)} €</p>
-            {!totalIsCorrect && <p>La somma delle parti non corrisponde al totale.</p>}
+            {!totalIsCorrect && <p className="font-medium">La somma delle parti non corrisponde al totale.</p>}
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose}>Annulla</Button>
-          <Button type="submit" disabled={addExpenseMutation.isPending}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:pt-4 border-t">
+          <Button 
+            type="submit" 
+            disabled={addExpenseMutation.isPending || (divisionType === 'manual' && !totalIsCorrect)}
+            className="w-full sm:w-auto"
+          >
             {addExpenseMutation.isPending ? 'Salvataggio...' : 'Crea Spesa'}
-          </Button>       
+          </Button>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onClose} 
+            disabled={addExpenseMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            Annulla
+          </Button>     
         </div>
       </form>
     </Modal>

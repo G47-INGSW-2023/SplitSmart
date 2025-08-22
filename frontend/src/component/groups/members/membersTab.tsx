@@ -23,11 +23,11 @@ const MemberRow = ({ member, onAdminActionsClick }: { member: ProcessedMember, o
 
   return (
     <li className="bg-white rounded-lg shadow-sm transition-all duration-300 overflow-hidden">
-      <div className="w-full flex items-stretch text-left">
+      <div className="w-full flex flex-col sm:flex-row text-left">
         <button
-          onClick={() => onAdminActionsClick(member)}
+          onClick={() => !isSelf && onAdminActionsClick(member)}
           disabled={isSelf}
-          className="flex-grow p-4 flex items-center justify-start gap-2 hover:bg-gray-50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+          className="flex-grow p-3 sm:p-4 flex items-center justify-start gap-2 hover:bg-gray-50 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
         >
           <span className="font-medium text-gray-900">{member.username}</span>
           {isSelf && <span className="font-normal text-blue-600">(Tu)</span>}
@@ -36,17 +36,17 @@ const MemberRow = ({ member, onAdminActionsClick }: { member: ProcessedMember, o
         
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-shrink-0 w-48 p-4 flex flex-col items-end justify-center hover:bg-gray-50 transition-colors border-l border-gray-200"
+          className="flex-shrink-0 w-full sm:w-40 p-3 sm:p-4 flex justify-end text-right items-center sm:flex-col sm:items-end sm:justify-center hover:bg-gray-50 transition-colors border-t sm:border-t-0 sm:border-l border-gray-200"
         >
           {Math.abs(balance) < 0.01 ? (
             <p className="text-gray-500 font-medium">In pari</p>
           ) : (
             <>
+              <p className={`text-md px-1 ${balanceColor}`}>
+                {balance > 0 ? 'Deve ricevere' : 'Deve dare'}
+              </p>
               <p className={`font-bold text-lg ${balanceColor}`}>
                 {Math.abs(balance).toFixed(2)} €
-              </p>
-              <p className={`text-xs ${balanceColor}`}>
-                {balance > 0 ? 'Deve ricevere' : 'Deve dare'}
               </p>
             </>
           )}
@@ -85,31 +85,32 @@ const MemberRow = ({ member, onAdminActionsClick }: { member: ProcessedMember, o
 
 export default function MembersTab({ groupId, initialMembers, isCurrentUserAdmin }: MembersTabProps) {
   const [selectedMember, setSelectedMember] = useState<ProcessedMember | null>(null);
-
   const [isAddMemberModalOpen, setAddMemberModalOpen] = useState(false);
+
   return (
-    <div className="space-y-8">   
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-gray-800">Membri del Gruppo</h3>
+    <div className="space-y-6">   
+       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h3 className="text-xl font-semibold text-gray-800">Membri e Saldi</h3>
         {isCurrentUserAdmin && (
-          <Button onClick={() => setAddMemberModalOpen(true)}>Aggiungi Membro</Button>
+          <Button 
+            onClick={() => setAddMemberModalOpen(true)}
+            className="w-full sm:w-auto"
+          >
+            Aggiungi Membro
+          </Button>
         )}
       </div>
 
-
-       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Panoramica Saldi Membri</h3>
-        <ul className="space-y-3">
-          {initialMembers.map(member => (
-            <MemberRow
-                key={member.id}
-                member={member}
-                onAdminActionsClick={setSelectedMember}
-            />
-          ))}
-        </ul>
-      </div>
-
+       <ul className="space-y-3">
+        {initialMembers.map(member => (
+          <MemberRow
+              key={member.id}
+              member={member}
+              onAdminActionsClick={setSelectedMember}
+          />
+        ))}
+      </ul>
+      
       {selectedMember && (
         <MemberDetailModal
           member={selectedMember}

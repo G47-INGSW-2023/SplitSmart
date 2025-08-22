@@ -54,13 +54,16 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
   return (
     <Modal isOpen={true} onClose={onClose} title={`Dettagli di ${member.username}`}>
       <div className="space-y-4">
-        <div>
-          <p className="text-sm text-black">Username</p>
-          <p className="font-semibold text-gray-500">{member.username}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-800">Email</p>
-          <p className="font-semibold text-gray-500">{member.email}</p>
+        {/* Sezione Dettagli Utente */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-medium text-gray-500">Username</p>
+            <p className="font-semibold text-gray-800">{member.username}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500">Email</p>
+            <p className="font-semibold text-gray-800">{member.email}</p>
+          </div>
         </div>
 
         {isCurrentUserAdmin && (
@@ -72,7 +75,7 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
                   disabled={isLoading}
                   className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
                 >
-                  {demoteMutation.isPending ? 'Rimozione privilegi...' : 'Rimuovi privilegi di Admin'}
+                  {demoteMutation.isPending ? 'Rimozione privilegi...' : 'Rimuovi da Admin'}
                 </Button>
               )
             ) : (

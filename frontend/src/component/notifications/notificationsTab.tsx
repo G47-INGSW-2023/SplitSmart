@@ -3,11 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Notific } from '@/types';
-import { formatNotificationMessage } from '@/lib/utils';
 import ExpenseNotificationItem from './expenseNotificationItem'; // Importa il nuovo componente
-import PrivateExpenseNotificationItem from './privateExpenseNotificationItem'; // Per spese private
 import { useAuth } from '@/lib/authContext';
 import { useEffect, useRef } from 'react';
+import { formatNotificationMessage } from '@/lib/utils';
 
 export default function NotificationsTab() {
   const queryClient = useQueryClient();
@@ -21,7 +20,7 @@ export default function NotificationsTab() {
     select: (data) => {
       return data.sort((a, b) => 
         new Date(b.creation_date).getTime() - new Date(a.creation_date).getTime()
-      );
+      );  
     },
   });
 
@@ -37,7 +36,6 @@ export default function NotificationsTab() {
   useEffect(() => {
     if (notifications && !markedAsRead.current && notifications.some(n => !n.read)) {
       const unreadNotifications = notifications.filter(n => !n.read);
-      console.log(`Segno ${unreadNotifications.length} notifiche come lette...`);
       
       unreadNotifications.forEach(notif => {
         markAsReadMutation.mutate(notif.id);
@@ -47,30 +45,29 @@ export default function NotificationsTab() {
     }
   }, [notifications, markAsReadMutation]); 
 
+  const handleMarkAsRead = (id: number) => {
+    markAsReadMutation.mutate(id);
+  };
+
+  const contextualTypes = ['NEW_EXPENSE', 'EXPENSE_UPDATED', 'EXPENSE_DELETED'];
+
   if (isLoading) return <p>Caricamento notifiche...</p>;
-
-  const expenseNotificationTypes = ['NEW_EXPENSE', 'EXPENSE_MODIFIED', 'EXPENSE_DELETED'];
-
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
      {notifications && notifications.length > 0 ? (
         notifications.map(notif => (
-          <div key={notif.id} className={`p-4 border-b ${!notif.read ? 'bg-blue-50' : ''} hover:bg-gray-100 transition-colors`}>
+          <div key={notif.id} className={`p-4 border-b last:border-b-0 ${!notif.read ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
             <div className="flex items-start gap-4">
               <div className="flex-grow">
                 
-                {expenseNotificationTypes.includes(notif.notification_type || '') ? (
-                // Se è una notifica di spesa, controlla se è di gruppo o privata
-                notif.group_id ? (
-                  <ExpenseNotificationItem notification={notif} />
+                {contextualTypes.includes(notif.notification_type || '') ? (
+                  // Se è una notifica di spesa (sia di gruppo che privata), usa il componente intelligente
+                  <ExpenseNotificationItem notification={notif} onMarkAsRead={handleMarkAsRead} />
                 ) : (
-                  <PrivateExpenseNotificationItem notification={notif} />
-                )
-              ) : (
-                // Per tutte le altre notifiche (es. amicizia), usa il formattatore di base
-                <p className="text-sm text-gray-800">{formatNotificationMessage(notif)}</p>
-              )}
-                
+                  // Per tutte le altre, usa la formattazione di base
+                  <p className="text-sm">{formatNotificationMessage(notif)}</p>
+                )}  
+                              
                 <p className="text-xs text-gray-500 mt-2">{new Date(notif.creation_date).toLocaleString('it-IT')}</p>
               </div>
             </div>

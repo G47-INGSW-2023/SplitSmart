@@ -55,18 +55,40 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
   const payerName = (memberIdToNameMap.get(expense.paid_by) || `Utente ID ${expense.paid_by}`) + (currentUser?.id === expense.paid_by ? ' (Tu)' : '');
 
   return (
+    /* 
+        <div className="border-t pt-4 mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+         <Button 
+            variant="destructive" 
+            onClick={() => { if (window.confirm("Sei sicuro di voler eliminare questa spesa?")) { deleteMutation.mutate(); }}} 
+            disabled={deleteMutation.isPending}
+            className="w-full sm:w-auto" 
+          >
+            {deleteMutation.isPending ? 'Eliminazione...' : 'Elimina'}
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={onEditClick} 
+            disabled={deleteMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            Modifica
+          </Button>
+        </div>
+      </div>
+    </Modal>
+    */
     <Modal isOpen={isOpen} onClose={onClose} title={`Dettagli: ${expense.desc}`}>
       <div className="space-y-4">
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <div className="flex justify-between items-center">
+        <div className="p-3 sm:p-4 bg-gray-50 rounded-lg space-y-2">
+          <div className="flex justify-between items-center text-sm sm:text-base">
             <span className="text-gray-600">Importo Totale</span>
-            <span className="text-2xl font-bold text-gray-800">{expense.total_amount.toFixed(2)} €</span>
+            <span className="text-xl sm:text-2xl font-bold text-gray-800">{expense.total_amount.toFixed(2)} €</span>
           </div>
-          <div className="flex justify-between items-center mt-2">
+          <div className="flex justify-between items-center text-sm sm:text-base">
             <span className="text-gray-600">Pagato da</span>
             <span className="font-semibold text-gray-800">{payerName}</span>
           </div>
-          <div className="flex justify-between items-center mt-1">
+          <div className="flex justify-between items-center text-sm sm:text-base">
             <span className="text-gray-600">Data</span>
             <span className="font-semibold text-gray-800">{new Date(expense.creation_date).toLocaleDateString('it-IT')}</span>
           </div>
@@ -81,12 +103,12 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
               participants.map(p => {
                 const participantName = memberIdToNameMap.get(p.user_id) || `Utente ID ${p.user_id}`;
                 return (
-                  <div key={p.user_id} className="flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded">
-                    <span className="text-gray-700">
+                  <div key={p.user_id} className="flex justify-between items-center py-1 px-2">
+                    <span className="text-gray-700 text-sm sm:text-base">
                       {participantName}
                       {currentUser?.id === p.user_id && <span className="font-normal ml-2">(Tu)</span>}
                     </span>
-                    <span className="font-medium text-gray-900">{p.amount_due?.toFixed(2)} €</span>
+                    <span className="font-medium text-gray-900 text-sm sm:text-base">{p.amount_due?.toFixed(2)} €</span>
                   </div>
                 );
               })
@@ -94,25 +116,23 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
           </div>
         </div>
         {isCurrentUserAdmin && (
-          <div className="border-t pt-4 mt-4 flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={onEditClick}
-              disabled={deleteMutation.isPending}
-            >
-              Modifica
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (window.confirm("Sei sicuro di voler eliminare questa spesa?")) {
-                  deleteMutation.mutate();
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'Eliminazione...' : 'Elimina'}
-            </Button>
+          <div className="border-t pt-4 mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button 
+            variant="destructive" 
+            onClick={() => { if (window.confirm("Sei sicuro di voler eliminare questa spesa?")) { deleteMutation.mutate(); }}} 
+            disabled={deleteMutation.isPending}
+            className="w-full sm:w-auto" 
+          >
+            {deleteMutation.isPending ? 'Eliminazione...' : 'Elimina'}
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={onEditClick} 
+            disabled={deleteMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            Modifica
+          </Button>
           </div>
         )}
       </div>

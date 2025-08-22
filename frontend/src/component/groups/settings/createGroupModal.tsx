@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button } from '@/component/ui/button';
@@ -20,6 +20,12 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth(); // Ottieni l'utente corrente
 
+  useEffect(() => {
+    if (isOpen) {
+      setName('');
+      setDescription('');
+    }
+  }, [isOpen]);
   // useMutation gestisce la logica di chiamata API per azioni (POST, PUT, DELETE)
   const createGroupMutation = useMutation({
     mutationFn: api.createGroup,
@@ -40,18 +46,15 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      // Aggiungiamo una piccola validazione
-      return;
+    if (!name.trim()) return;
+    
+    const dataToSubmit: { name: string; description?: string } = { name: name.trim() };
+    if (description.trim()) {
+      dataToSubmit.description = description.trim();
     }
-    // Eseguiamo la mutazione con i dati del form
-    createGroupMutation.mutate({ name, description });
+    
+    createGroupMutation.mutate(dataToSubmit);
   };
-
-  if (!isOpen && (name || description)) {
-    setName('');
-    setDescription('');
-  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Crea un nuovo gruppo">
@@ -90,17 +93,22 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           </p>
         )}
 
-        <div className="flex justify-end gap-2 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t">
+          <Button 
+            type="submit" 
+            disabled={createGroupMutation.isPending}
+            className="w-full sm:w-auto" // A tutta larghezza su mobile
+          >
+            {createGroupMutation.isPending ? 'Creazione in corso...' : 'Crea gruppo'}
+          </Button>
           <Button 
             type="button" 
             variant="secondary" 
             onClick={onClose} 
             disabled={createGroupMutation.isPending}
+            className="w-full sm:w-auto" // A tutta larghezza su mobile
           >
             Annulla
-          </Button>
-          <Button type="submit" disabled={createGroupMutation.isPending}>
-            {createGroupMutation.isPending ? 'Creazione in corso...' : 'Crea gruppo'}
           </Button>
         </div>
       </form>
