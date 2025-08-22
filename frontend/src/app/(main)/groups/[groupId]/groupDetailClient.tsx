@@ -35,7 +35,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
   const router = useRouter();
 
   const { data: processedData, isLoading, isError, error } = useQuery({
-    queryKey: ['group-details-simplified', groupId],
+    queryKey: ['group-details-simplified', groupId, currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return null;
 
@@ -142,24 +142,24 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{processedData.group.group_name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{processedData.group.group_name}</h1>
           <p className="text-gray-500 mt-1">{processedData.group.desc}</p>
         </div>
         {processedData.isCurrentUserAdmin && (
-          <div className="flex-shrink-0 ml-4 flex gap-2">
+          <div className="flex-shrink-0 w-full sm:w-auto flex sm:flex-row gap-2">
             <Button
               variant="secondary"
               onClick={() => setEditModalOpen(true)}
-              className="w-auto"
+              className="w-full sm:w-auto"
             >
               Modifica
             </Button>
             <Button
               variant="destructive"
               onClick={() => setDeleteModalOpen(true)}
-              className="w-auto"
+              className="w-full sm:w-auto"
             >
               Elimina
             </Button>
@@ -167,10 +167,10 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
         )}
       </div>
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+            className={`flex-shrink-0 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${activeTab === 'expenses'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -180,7 +180,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
           </button>
           <button
             onClick={() => setActiveTab('members')}
-            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+            className={`flex-shrink-0 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${activeTab === 'members'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
