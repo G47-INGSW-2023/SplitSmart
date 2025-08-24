@@ -10,8 +10,8 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('notifications');
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-3xl font-bold text-gray-800">Centro Notifiche</h1>
+    <div className="space-y-6 max-w-4xl mx-auto p-1 md:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Centro Notifiche</h1>
 
       {/* Selettore Tab */}
       <div className="border-b border-gray-200">

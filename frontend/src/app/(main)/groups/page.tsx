@@ -10,7 +10,7 @@ export default function GroupsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-1 md:p-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">I tuoi Gruppi</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Gestione Gruppi</h1>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <Button 
           onClick={() => setCreateModalOpen(true)}

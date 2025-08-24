@@ -84,7 +84,7 @@ export function GroupList() {
         <p className="text-md sm:text-lg text-gray-600 px-2">
           {overallBalance > 0.01 ? "In totale devi ricevere" : overallBalance < -0.01 ? "In totale devi dare" : "Sei in pari con tutti."}
         </p>
-        <p className={`text-lg sm:text-3xl font-bold sm:mt-2 ${overallBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <p className={`text-lg sm:text-3xl font-bold ${overallBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {overallBalance.toFixed(2)}€
         </p>
       </div>
