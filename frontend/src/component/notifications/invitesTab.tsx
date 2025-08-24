@@ -6,6 +6,21 @@ import { EnrichedGroupInvite } from '@/types';
 import { Button } from '@/component/ui/button';
 import { useAuth } from '@/lib/authContext';
 
+const LoadingSkeleton = () => (
+    <div className="space-y-3">
+        {[...Array(2)].map((_, i) => (
+            <div key={i} className="bg-white p-4 rounded-lg shadow-sm animate-pulse flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                <div className="flex gap-2 self-end sm:self-center">
+                    <div className="h-9 w-20 bg-gray-300 rounded-md"></div>
+                    <div className="h-9 w-20 bg-gray-200 rounded-md"></div>
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+
 export default function InvitesTab() {
   const queryClient = useQueryClient();
   const { refetchNotifications } = useAuth(); 
@@ -61,29 +76,43 @@ export default function InvitesTab() {
     },  
   });
 
-  if (isLoading) return <p>Caricamento inviti...</p>;
+  if (isLoading) return < LoadingSkeleton />;
 
-  return (
+  return (      
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          {enrichedInvites && enrichedInvites.length > 0 ? (
-        enrichedInvites.map(invite => (
-          <div key={invite.id} className="p-4 border-b last:border-b-0">
-            <p className="text-sm text-gray-800">
-              {/* 4. Mostra i nomi invece degli ID */}
-              <strong className="font-semibold">{invite.inviting_user_name}</strong> ti ha invitato a unirti al gruppo <strong className="font-semibold">&quot;{invite.group_name}&quot;</strong>.
-            </p>
-            <p className="text-xs text-gray-500 mt-1">{new Date(invite.invite_date).toLocaleString('it-IT')}</p>
-            
-            {invite.invite_status === 'PENDING' && (
-              <div className="mt-3 flex space-x-2">
-                <Button onClick={() => acceptMutation.mutate(invite.id)} disabled={acceptMutation.isPending}>Accetta</Button>
-                <Button variant="secondary" onClick={() => rejectMutation.mutate(invite.id)} disabled={rejectMutation.isPending}>Rifiuta</Button>
+      {enrichedInvites && enrichedInvites.length > 0 ? (
+        // Usiamo `<ul>` e `<li>` per una migliore semantica
+        <ul className="divide-y divide-gray-200">
+          {enrichedInvites.map(invite => (
+            <li key={invite.id} className="p-4">
+              
+              {/* Contenitore principale della riga */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                
+                {/* Sezione testo (cresce per occupare spazio) */}
+                <div className="flex-grow">
+                  <p className="text-sm text-gray-800">
+                    <strong className="font-semibold">{invite.inviting_user_name}</strong> ti ha invitato a unirti al gruppo <strong className="font-semibold">{invite.group_name}</strong>.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(invite.invite_date).toLocaleString('it-IT')}</p>
+                </div>
+                
+                {/* Sezione azioni (non si restringe) */}
+                <div className="flex-shrink-0 self-end sm:self-center">
+                  {invite.invite_status === 'PENDING' && (
+                    <div className="flex space-x-2">
+                      <Button onClick={() => acceptMutation.mutate(invite.id)} disabled={acceptMutation.isPending}>Accetta</Button>
+                      <Button variant="secondary" onClick={() => rejectMutation.mutate(invite.id)} disabled={rejectMutation.isPending}>Rifiuta</Button>
+                    </div>
+                  )}
+                  {invite.invite_status === 'ACCEPTED' && <p className="text-sm font-semibold text-green-600">Accettato</p>}
+                  {invite.invite_status === 'REJECTED' && <p className="text-sm font-semibold text-red-600">Rifiutato</p>}
+                </div>
+
               </div>
-            )}
-            {invite.invite_status === 'ACCEPTED' && <p className="mt-2 text-xs font-semibold text-green-600">Invito accettato.</p>}
-            {invite.invite_status === 'REJECTED' && <p className="mt-2 text-xs font-semibold text-red-600">Invito rifiutato.</p>}
-          </div>
-        ))
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className="p-10 text-center text-gray-500">Nessun invito ricevuto.</p>
       )}
