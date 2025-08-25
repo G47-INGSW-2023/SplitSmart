@@ -190,7 +190,7 @@ fn update_private_expense(
 
             (
                 notifications::notified_user_id.eq(d),
-                notifications::notification_type.eq("NEW_EXPENSE"),
+                notifications::notification_type.eq("EXPENSE_MODIFIED"),
                 notifications::expense_id.eq(expense.id),
                 notifications::user_id.eq(user.id),
                 notifications::creation_date.eq(diesel::dsl::now),
