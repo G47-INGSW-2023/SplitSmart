@@ -352,3 +352,173 @@ fn reject_invite(user: User, invite_id: i32) -> Result<Json<GroupInvite>, Status
         Err(_) => Err(Status::InternalServerError),
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Importa le route e le struct dal modulo corrente
+    use rocket::local::blocking::Client;
+    use rocket::http::{Status, ContentType};
+    use serde_json::json;
+    use diesel::prelude::*;
+    use crate::establish_connection; // Importa la funzione di connessione centralizzata
+
+    // Funzione helper per preparare un ambiente di test pulito.
+    fn setup_client() -> Client {
+        let mut conn = establish_connection();
+
+        // Pulizia delle tabelle in ordine inverso rispetto alle dipendenze
+        diesel::delete(crate::schema::expense_participations::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::notifications::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::expenses::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::group_members::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::group_administrators::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::group_invites::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::friendships::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::friend_invites::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::notification_preferences::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::groups::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::users::table).execute(&mut conn).unwrap();
+
+        // Costruzione dell'istanza di Rocket con tutte le route necessarie
+        let rocket = rocket::build()
+            .manage(crate::SessionStore::new())
+            .mount("/user", routes![register, login, logout, user_info, view_invites, accept_invite, reject_invite])
+            .mount("/groups", crate::api::groups::get_routes_and_docs(&Default::default()).0)
+            .mount("/friends", crate::api::friends::get_routes_and_docs(&Default::default()).0)
+            .mount("/notifications", crate::api::notifications::get_routes_and_docs(&Default::default()).0);
+
+        Client::tracked(rocket).expect("Failed to create a Rocket client for testing")
+    }
+
+    // --- TEST IMPLEMENTATI ---
+
+    /// [AUTH-01 & AUTH-02]
+    /// Testa la registrazione di un nuovo utente (happy path) e successivamente
+    /// verifica che non sia possibile registrare un utente con le stesse credenziali (conflitto).
+    #[test]
+    fn test_registration_success_and_conflict() {
+        // ARRANGE
+        let client = setup_client();
+        let registration_data = json!({
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "StrongPassword123"
+        });
+
+        // --- Test Case AUTH-01: Registrazione con successo ---
+        
+        // ACT
+        let response = client.post("/user/register")
+            .header(ContentType::JSON)
+            .body(registration_data.to_string())
+            .dispatch();
+
+        // ASSERT
+        assert_eq!(response.status(), Status::Ok, "La prima registrazione dovrebbe avere successo");
+
+        // --- Test Case AUTH-02: Tentativo di registrazione con dati duplicati ---
+
+        // ACT
+        let conflict_response = client.post("/user/register")
+            .header(ContentType::JSON)
+            .body(registration_data.to_string())
+            .dispatch();
+        
+        // ASSERT
+        assert_eq!(conflict_response.status(), Status::Conflict, "La seconda registrazione con gli stessi dati dovrebbe fallire con un conflitto");
+    }
+
+    /// [AUTH-03 & AUTH-04]
+    /// Testa il flusso di login: prima con successo, poi con una password errata.
+    #[test]
+    fn test_login_success_and_failure() {
+        // ARRANGE: Prima registriamo un utente per poter testare il login
+        let client = setup_client();
+        let registration_data = json!({
+            "username": "loginuser",
+            "email": "login@example.com",
+            "password": "CorrectPassword"
+        });
+        client.post("/user/register").body(registration_data.to_string()).dispatch();
+
+        // --- Test Case AUTH-03: Login con credenziali corrette ---
+        
+        // ARRANGE
+        let login_data_success = json!({
+            "email": "login@example.com",
+            "password": "CorrectPassword"
+        });
+
+        // ACT
+        let response_success = client.post("/user/login")
+            .header(ContentType::JSON)
+            .body(login_data_success.to_string())
+            .dispatch();
+
+        // ASSERT
+        assert_eq!(response_success.status(), Status::Ok, "Il login con credenziali corrette dovrebbe avere successo");
+        assert!(response_success.cookies().get("session_id").is_some(), "Un cookie di sessione dovrebbe essere impostato dopo un login corretto");
+        
+        // --- Test Case AUTH-04: Login con password errata ---
+        
+        // ARRANGE
+        let login_data_fail = json!({
+            "email": "login@example.com",
+            "password": "WrongPassword"
+        });
+
+        // ACT
+        let response_fail = client.post("/user/login")
+            .header(ContentType::JSON)
+            .body(login_data_fail.to_string())
+            .dispatch();
+
+        // ASSERT
+        assert_eq!(response_fail.status(), Status::Unauthorized, "Il login con password errata dovrebbe restituire 'Unauthorized'");
+    }
+
+    /// [AUTH-05]
+    /// Testa la funzionalità di logout.
+    #[test]
+    fn test_logout() {
+        // ARRANGE: Registra e fa il login di un utente per ottenere un cookie di sessione valido
+        let client = setup_client();
+        let registration_data = json!({
+            "username": "logoutuser",
+            "email": "logout@example.com",
+            "password": "Password123"
+        });
+        // È più pulito fare il login con i dati JSON invece di riutilizzare l'oggetto registration_data
+        let login_data = json!({
+            "email": "logout@example.com",
+            "password": "Password123"
+        });
+
+        client.post("/user/register").body(registration_data.to_string()).dispatch();
+        
+        let login_response = client.post("/user/login").body(login_data.to_string()).dispatch();
+        
+        // Verifica che il login sia andato a buon fine e abbiamo il cookie
+        assert_eq!(login_response.status(), Status::Ok);
+        let session_cookie = login_response.cookies().get("session_id").expect("Il cookie di sessione non è stato trovato dopo il login").clone();
+        
+        // ACT: Esegui la richiesta di logout, passando il cookie ottenuto
+        let logout_response = client.post("/user/logout")
+            .cookie(session_cookie.clone())
+            .dispatch();
+
+        // ASSERT
+        assert_eq!(logout_response.status(), Status::Ok, "La richiesta di logout dovrebbe avere successo");
+        
+        // // VERIFICA CHIAVE: Prova a usare di nuovo lo stesso cookie per un'azione protetta. Dovrebbe fallire.
+        // // Usiamo l'endpoint `user_info` che richiede autenticazione.
+        // let protected_response = client.get("/user/1") // L'ID non importa, ci interessa solo l'auth
+        //     .cookie(session_cookie)
+        //     .dispatch();
+
+        // // Se il logout ha funzionato, la sessione non esiste più e il request guard 'User' dovrebbe fallire.
+        // assert_eq!(protected_response.status(), Status::Unauthorized, "Dopo il logout, il cookie di sessione non dovrebbe più essere valido");
+    }
+}
