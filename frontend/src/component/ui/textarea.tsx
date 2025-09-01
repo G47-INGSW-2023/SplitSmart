@@ -1,6 +1,5 @@
 import * as React from "react";
 
-// Modifica qui: da 'interface' a 'type'
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(

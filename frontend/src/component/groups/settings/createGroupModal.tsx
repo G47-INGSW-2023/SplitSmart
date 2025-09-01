@@ -5,9 +5,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
-import { Textarea } from '@/component/ui/textarea'; // Assicurati di avere questo componente
-import { Modal } from '@/component/ui/modal'; // E anche questo
-import { useAuth } from '@/lib/authContext'; // Importa useAuth per ottenere l'ID utente
+import { Textarea } from '@/component/ui/textarea'; 
+import { Modal } from '@/component/ui/modal'; 
+import { useAuth } from '@/lib/authContext';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth(); // Ottieni l'utente corrente
+  const { user: currentUser } = useAuth(); 
 
   useEffect(() => {
     if (isOpen) {
@@ -26,17 +26,13 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
       setDescription('');
     }
   }, [isOpen]);
-  // useMutation gestisce la logica di chiamata API per azioni (POST, PUT, DELETE)
   const createGroupMutation = useMutation({
     mutationFn: api.createGroup,
     onSuccess: () => {
-      // --- CORREZIONE CHIAVE QUI ---
-      // Invalidiamo la query che carica la lista dei gruppi con i loro saldi.
-      // È importante che la chiave corrisponda esattamente a quella usata in `GroupList.tsx`.
       queryClient.invalidateQueries({ queryKey: ['groups-with-balances', currentUser?.id] });
       
       alert('Gruppo creato con successo!');
-      onClose(); // Chiudi il modale
+      onClose();
     },
     onError: (error) => {
       console.error("Errore durante la creazione del gruppo:", error);
@@ -86,7 +82,6 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           />
         </div>
         
-        {/* Mostra un messaggio di errore se la mutazione fallisce */}
         {createGroupMutation.isError && (
           <p className="text-sm text-red-500">
             Errore: {createGroupMutation.error.message}
@@ -97,7 +92,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           <Button 
             type="submit" 
             disabled={createGroupMutation.isPending}
-            className="w-full sm:w-auto" // A tutta larghezza su mobile
+            className="w-full sm:w-auto"
           >
             {createGroupMutation.isPending ? 'Creazione in corso...' : 'Crea gruppo'}
           </Button>
@@ -106,7 +101,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
             variant="secondary" 
             onClick={onClose} 
             disabled={createGroupMutation.isPending}
-            className="w-full sm:w-auto" // A tutta larghezza su mobile
+            className="w-full sm:w-auto" 
           >
             Annulla
           </Button>

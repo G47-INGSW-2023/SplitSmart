@@ -19,8 +19,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Inizia come true per il check iniziale
-  const queryClient = useQueryClient(); // Inizializza il query client
+  const [isLoading, setIsLoading] = useState(true); 
+  const queryClient = useQueryClient(); 
 
   const { data: unreadNotificationsCount = 0, refetch: refetchNotifications } = useQuery({
     queryKey: ['unread-count'],
@@ -37,13 +37,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       return unreadNotifs + pendingInvites;
     },
-    enabled: !!user, // Esegui solo se l'utente è loggato
-    staleTime: 1000 * 60 * 5, // Non ricaricare per 5 minuti a meno che non venga invalidato
+    enabled: !!user, 
+    staleTime: 1000 * 60 * 5,
   });
 
-  // Funzione per provare a recuperare l'utente se è già loggato
   const checkAuthStatus = useCallback(async () => {
-    // Tentativo di recuperare l'ID utente da sessionStorage (più sicuro di localStorage per ID)
     const storedUserId = sessionStorage.getItem('userId');
     if (storedUserId) {
       try {
@@ -59,7 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Al primo caricamento, controlla lo stato
   useEffect(() => {
     setIsLoading(true);
     checkAuthStatus().finally(() => setIsLoading(false));
@@ -68,23 +65,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     try {
-      // 1. Chiama l'API di login per impostare il cookie e ottenere l'ID reale
       const { userId } = await api.login(credentials);
       
-      // 2. Chiama l'API per ottenere i dettagli reali dell'utente
       const userInfo = await api.getUserDetails(userId);
       
-      // 3. Costruisci l'oggetto User completo e reale
       const authenticatedUser: User = {
         id: userId,
         username: userInfo.username,
         email: userInfo.email,
       };
 
-      // 4. Salva l'utente nello stato del context
       setUser(authenticatedUser);
       
-      // 5. Salva l'ID utente in sessionStorage per poter ripristinare la sessione al refresh
       sessionStorage.setItem('userId', userId.toString());
 
       queryClient.invalidateQueries({ queryKey: ['unread-count'] }); 

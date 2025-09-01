@@ -4,7 +4,6 @@ const API_PROXY_URL = '/api-proxy';
 /**
  * Funzione helper per gestire le risposte API.
  * Se la risposta non è OK, lancia un errore.
- * Altrimenti, non fa nulla (permette al chiamante di decidere cosa fare con la risposta).
  */
 async function handleResponse<T>(response: Response): Promise<T | null> {
   if (!response.ok) {
@@ -60,7 +59,6 @@ export const api = {
         method: 'POST',
         credentials: 'include',
     });
-    // Non è necessario lanciare un errore se fallisce, ma logghiamo per debug
     if (!response.ok) { 
       console.error("Logout fallito sul backend, ma si procede con la pulizia del frontend.");
     }
@@ -118,9 +116,7 @@ export const api = {
       method: 'DELETE',
       credentials: 'include',
     });
-    // Usiamo una gestione dell'errore semplice
     if (!response.ok) {
-      // Se il backend risponde con un JSON di errore, proviamo a leggerlo
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.detail || errorData.message || "Impossibile eliminare il gruppo.";
       throw new Error(errorMessage);
@@ -237,7 +233,6 @@ export const api = {
       credentials: 'include',
     });
     if (!response.ok) {
-      // Usiamo una gestione dell'errore semplice
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.detail || errorData.message || "Impossibile eliminare la spesa.";
       throw new Error(errorMessage);
@@ -248,7 +243,6 @@ export const api = {
    * Promuove un utente a admin del gruppo.
    */
   promoteToAdmin: async (groupId: number, userId: number): Promise<void> => {
-    // Il backend ha questo endpoint: POST /groups/<gid>/admins/<uid>
     const response = await fetch(`${API_PROXY_URL}/groups/${groupId}/admins/${userId}`, {
       method: 'POST',
       credentials: 'include',
@@ -342,7 +336,7 @@ export const api = {
    */
   acceptInvite: async (inviteId: number): Promise<GroupInvite> => {
     const response = await fetch(`${API_PROXY_URL}/user/invites/${inviteId}/accept`, {
-      method: 'PUT', // Il backend usa PUT per aggiornare lo stato
+      method: 'PUT',
       credentials: 'include',
     });
     const updatedInvite = await handleResponse<GroupInvite>(response);
@@ -466,19 +460,22 @@ export const api = {
     }
   },
 
+  /**
+   * Recupera la lista delle spese private.
+   */
   getPrivateExpenses: async (): Promise<ExpenseWithParticipants[]> => {
-    // Il backend ha questo montato sotto un nuovo modulo `expenses.rs`,
-    // quindi l'URL sarà /expenses.
     const response = await fetch(`${API_PROXY_URL}/expenses`, { credentials: 'include' });
     return (await handleResponse<ExpenseWithParticipants[]>(response)) || [];
   },
 
+  /**
+   * Aggiunge una spesa privata.
+   */
    addPrivateExpense: async (data: AddExpenseData): Promise<Expense> => {
     const response = await fetch(`${API_PROXY_URL}/expenses`, {
-      // --- CORREZIONI QUI ---
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data), // Invia i dati della spesa
+      body: JSON.stringify(data), 
       credentials: 'include',
     });
     const newExpense = await handleResponse<Expense>(response);
@@ -486,12 +483,14 @@ export const api = {
     return newExpense;
   },
 
+  /**
+   * Modifica una spesa privata.
+   */
   updatePrivateExpense: async (expenseId: number, data: AddExpenseData): Promise<Expense> => {
     const response = await fetch(`${API_PROXY_URL}/expenses/${expenseId}`, {
-      // --- CORREZIONI QUI ---
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data), // Invia i dati della spesa
+      body: JSON.stringify(data), 
       credentials: 'include',
     });
     const updatedExpense = await handleResponse<Expense>(response);
@@ -499,7 +498,9 @@ export const api = {
     return updatedExpense;
   },
 
-  // deletePrivateExpense è corretto perché DELETE non ha bisogno di un corpo
+  /**
+   * Elimina una spesa privata.
+   */  
   deletePrivateExpense: async (expenseId: number): Promise<void> => {
     const response = await fetch(`${API_PROXY_URL}/expenses/${expenseId}`, {
       method: 'DELETE',

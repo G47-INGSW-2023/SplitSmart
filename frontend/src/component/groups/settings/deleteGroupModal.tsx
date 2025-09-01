@@ -17,7 +17,7 @@ interface DeleteGroupModalProps {
 export default function DeleteGroupModal({ isOpen, onClose, groupId, groupName }: DeleteGroupModalProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { user: currentUser } = useAuth(); // Ottieni l'utente per invalidare la query corretta
+  const { user: currentUser } = useAuth(); 
   
   const deleteMutation = useMutation({
     mutationFn: () => api.deleteGroup(groupId),

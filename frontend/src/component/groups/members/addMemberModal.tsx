@@ -13,7 +13,7 @@ interface AddMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   groupId: number;
-  currentMemberIds: number[]; // ID dei membri già nel gruppo
+  currentMemberIds: number[];
 }
 
 export default function AddMemberModal({ isOpen, onClose, groupId, currentMemberIds }: AddMemberModalProps) {
@@ -21,7 +21,6 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  // Recupera la lista degli amici
   const { data: friends, isLoading: isLoadingFriends } = useQuery<EnrichedFriend[]>({
     queryKey: ['friends-list-for-add', currentUser?.id],
     queryFn: async () => {
@@ -46,9 +45,6 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
     enabled: isOpen &&  !!currentUser,
   });
 
-
-
-  // Mutazione per invitare via email
   const inviteMutation = useMutation({
     mutationFn: (email: string) => api.inviteUserToGroup(groupId, { email }),
     onSuccess: () => {
@@ -58,12 +54,10 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
     onError: (error) => alert(`Errore: ${error.message}`),
   });
 
-  // Mutazione per aggiungere un amico direttamente
   const addFriendMutation = useMutation({
     mutationFn: (userId: number) => api.addMemberToGroup(groupId, userId),
     onSuccess: () => {
       alert(`Amico aggiunto al gruppo!`);
-      // Invalidiamo la query principale per aggiornare la lista dei membri in background
       queryClient.invalidateQueries({ queryKey: ['group-details-simplified', groupId] });
     },
     onError: (error, ) => alert(`Errore nell'aggiunta dell'amico: ${error.message}`),
@@ -74,7 +68,6 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
     inviteMutation.mutate(inviteEmail);
   };
   
-  // Filtra gli amici che non sono già nel gruppo
   const friendsToAdd = useMemo(() => {
     if (!friends) return [];
     const memberIdSet = new Set(currentMemberIds);
@@ -84,7 +77,6 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi membri">
       <div className="space-y-6">
-        {/* Sezione Invito via Email */}
         <div>
           <h4 className="text-lg font-semibold text-gray-800 mb-2">Invita tramite Email</h4>
           <form onSubmit={handleInviteSubmit} className="flex flex-col sm:flex-row gap-2">
@@ -92,8 +84,6 @@ export default function AddMemberModal({ isOpen, onClose, groupId, currentMember
             <Button type="submit" className="w-full sm:w-auto flex-shrink-0" disabled={inviteMutation.isPending}>{inviteMutation.isPending ? 'Invio...' : 'Invia'}</Button>
           </form>
         </div>
-
-        {/* Sezione Aggiungi Amici */}
         <div className="border-t pt-4">
           <h4 className="text-lg font-semibold text-gray-800 mb-2">Aggiungi dalla tua lista amici</h4>
           {isLoadingFriends ? <p className="text-center text-gray-500 py-4">Caricamento amici...</p> : (

@@ -1,5 +1,3 @@
-// types/index.ts
-
 import { ReactNode } from "react";
 
 export interface LoginCredentials {
@@ -13,8 +11,6 @@ export interface UserRegisterData {
   password: string;
 }
 
-// Corrisponde alla struct `User` in models.rs (solo i campi che ci servono)
-// Ho rimosso password_hash e altri campi sensibili
 export interface User {
   id: number;
   username: string;
@@ -33,17 +29,15 @@ export interface GroupMember {
   user_id: number;
 }
 
-// Corrisponde alla struct `Group` in models.rs
 export interface Group {
   id: number;
   group_name: string;
   desc: string | null;
-  creation_date: string; // Le date arrivano come stringhe ISO
+  creation_date: string;
 }
 
-// Dati per creare un gruppo, corrispondono a `PutGroup`
 export interface CreateGroupData {
-  name: string; // Il backend si aspetta 'name'
+  name: string; 
   description?: string;
 }
 
@@ -77,8 +71,8 @@ export interface AddExpenseData {
 
 export interface ProcessedMember extends User {
   isAdmin: boolean;
-  netBalance: number; // Il suo saldo netto totale nel gruppo
-  debts: DebtDetail[]; // La lista dettagliata dei suoi debiti/crediti
+  netBalance: number;
+  debts: DebtDetail[];
 }
 
 export interface BalanceDetail {
@@ -109,7 +103,6 @@ export interface SimplifiedTransaction {
   amount: number;
 }
 
-// Per invitare un utente
 export interface InviteUserData {
   email: string;
   message?: string;

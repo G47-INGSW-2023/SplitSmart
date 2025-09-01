@@ -119,11 +119,6 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
   };
 
   return (
-    /* 
-   
-        
-        
-    */
     <Modal isOpen={isOpen} onClose={onClose} title="Aggiungi una spesa">
       <form onSubmit={handleSubmit} className="sm: space-y-4">
         <div>

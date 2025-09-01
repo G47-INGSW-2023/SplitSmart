@@ -24,10 +24,9 @@ export default function FriendRequestsTab() {
   const { user: currentUser } = useAuth(); 
 
   const { data: invites, isLoading } = useQuery<EnrichedFriendInvite[]>({
-    queryKey: ['friend-invites-enriched', currentUser?.id], // Usiamo una chiave diversa per i dati arricchiti
+    queryKey: ['friend-invites-enriched', currentUser?.id],
     queryFn: async () => {
       const baseInvites = await api.getFriendInvites();
-      // Filtra solo gli inviti in sospeso
       const pendingInvites = baseInvites.filter(i => i.invite_status === 'PENDING');
       
         const enrichedPromises = pendingInvites.map(async invite => {
@@ -42,13 +41,12 @@ export default function FriendRequestsTab() {
 
       return Promise.all(enrichedPromises);
     },
-    enabled: !!currentUser, // Assicurati che la query parta solo quando l'utente è loggato
+    enabled: !!currentUser,
   });
 
   const acceptMutation = useMutation({
     mutationFn: (id: number) => api.acceptFriendInvite(id),
     onSuccess: () => {
-      // Invalida sia gli inviti che la lista amici
       queryClient.invalidateQueries({ queryKey: ['friend-invites-enriched'] });
       queryClient.invalidateQueries({ queryKey: ['friends-list'] });
     }
@@ -61,7 +59,6 @@ export default function FriendRequestsTab() {
     }
   });
   
-  // --- ISTRUZIONE `return` MANCANTE AGGIUNTA QUI ---
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -71,9 +68,7 @@ export default function FriendRequestsTab() {
       {invites && invites.length > 0 ? (
         <ul className="space-y-3">
           {invites.map(invite => {
-            const isLoadingAction = (acceptMutation.isPending && acceptMutation.variables === invite.id) ||
-                                    (rejectMutation.isPending && rejectMutation.variables === invite.id);
-
+            const isLoadingAction = (acceptMutation.isPending && acceptMutation.variables === invite.id) || (rejectMutation.isPending && rejectMutation.variables === invite.id);
             return (
               <li key={invite.id} className="bg-white p-4 rounded-lg shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm text-gray-800">

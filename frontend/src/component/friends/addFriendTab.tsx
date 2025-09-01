@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/authContext';
 
 export default function AddFriendTab() {
   const [email, setEmail] = useState('');
-  const queryClient = useQueryClient(); // Inizializza il query client
+  const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
     
   const inviteMutation = useMutation({
@@ -19,8 +19,7 @@ export default function AddFriendTab() {
       queryClient.invalidateQueries({ queryKey: ['friend-invites-enriched', currentUser?.id] });
     },
     onError: (error) => {
-      // Diamo un feedback più specifico per errori comuni
-      if (error.message.includes('utente')) { // Semplice controllo sul messaggio
+      if (error.message.includes('utente')) {
         alert("Errore: Impossibile trovare un utente con questa email.");
       } else {
         alert(`Errore: ${error.message}`);

@@ -23,20 +23,16 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
   const [selectedExpense, setSelectedExpense] = useState<ExpenseWithParticipants | null>(null);
   const [editingExpense, setEditingExpense] = useState<ExpenseWithParticipants | null>(null);
 
-  const queryClient = useQueryClient(); // Inizializza il query client
-  const router = useRouter(); // Importa e inizializza il router per il reindirizzamento
+  const queryClient = useQueryClient();
+  const router = useRouter(); 
 
   const removeFriendMutation = useMutation({
     mutationFn: () => api.removeFriend(friendId),
     onSuccess: () => {
-      // 1. Invalida la cache della lista amici per aggiornarla
       queryClient.invalidateQueries({ queryKey: ['friends-list', currentUser?.id] });
-      // 2. Invalida anche la cache delle spese private, perché potrebbero cambiare i saldi
       queryClient.invalidateQueries({ queryKey: ['private-expenses', currentUser?.id] });
       
       alert("Amico rimosso con successo.");
-      
-      // 3. Reindirizza l'utente alla pagina principale degli amici
       router.push('/friends');
     },
     onError: (error) => {
@@ -49,7 +45,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
     setEditingExpense(expenseData);
   };
 
-  // Query per recuperare tutti i dati necessari per questa pagina
   const { data, isLoading } = useQuery({
     queryKey: ['friend-details', friendId, currentUser?.id],
     queryFn: async () => {
@@ -70,7 +65,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
       let totalBalance = 0;
       const timelineItems: TimelineItem[] = [];
 
-      // Processa le spese private
       privateExpenses
         .filter(([, p]) => p.length === 2 && p.some(u => u.user_id === friendId))
         .forEach(expenseItem => {
@@ -84,7 +78,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
           timelineItems.push({ type: 'private_expense', date: expense.creation_date, data: expenseItem });
         });
 
-      // Processa i gruppi in comune
       await Promise.all(myGroups.map(async (group) => {
         const [groupMembers, groupExpenses] = await Promise.all([
           api.getGroupMembers(group.id),
@@ -133,7 +126,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{friend.username}</h1>
         </div>
-        {/* Contenitore per il pulsante di azione */}
       </div>
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg text-center">
         <p className={`text-base sm:text-lg text-gray-600  ${balanceColor}`}>
@@ -170,7 +162,6 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
         <h2 className="text-xl font-semibold text-gray-800">Cronologia Spese</h2>
       </div>
 
-      {/* --- SEZIONE DELLA LISTA SPESE AGGIORNATA --- */}
       <ul className="space-y-3">        
         {timeline.length > 0 ? timeline.map((item) => {
           if (item.type === 'private_expense') {
@@ -213,9 +204,7 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
               </li>
             );
           }
-
           else {
-            // Renderizza un riepilogo del saldo di gruppo
             const { group, balance: groupBalance } = item.data;
             const groupBalanceColor = groupBalance > 0 ? 'text-green-600' : 'text-red-600';
             return (
@@ -244,14 +233,13 @@ export default function FriendDetailClient({ friendId }: FriendDetailClientProps
         )}
       </ul>
 
-      
-      {/* Modale per Aggiungere Spesa 1-a-1 */}
       <AddFriendExpenseModal
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
         friend={friend}
       />
-       {selectedExpense && (
+
+      {selectedExpense && (
         <PrivateExpenseDetailModal
           isOpen={!!selectedExpense}
           onClose={() => setSelectedExpense(null)}

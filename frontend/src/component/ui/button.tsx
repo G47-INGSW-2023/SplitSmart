@@ -4,10 +4,6 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const buttonVariants = cva(
-  // --- MODIFICA 1: Stili di base resi più flessibili ---
-  // Rimuoviamo `w-full` da qui, lo applicheremo solo quando serve.
-  // Aggiungiamo `inline-flex items-center justify-center` per centrare
-  // perfettamente testo e icone.
   'inline-flex items-center justify-center font-bold rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors',
   {
     variants: {
@@ -19,8 +15,7 @@ const buttonVariants = cva(
       size: {
         default: 'py-2 px-4',
         small: 'py-1 px-2 text-sm',
-        // --- MODIFICA 2: Aggiunta la nuova variante "icon" ---
-        icon: 'h-9 w-9', // Altezza e larghezza fisse, ideale per icone
+        icon: 'h-9 w-9', 
       }
     },
     defaultVariants: {

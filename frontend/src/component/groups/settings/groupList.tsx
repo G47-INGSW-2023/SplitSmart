@@ -8,14 +8,12 @@ import { Group } from '@/types';
 
 const LoadingSkeleton = () => (
   <div>
-    {/* Scheletro per il riepilogo */}
     <div className="mb-8 p-6 rounded-lg bg-white shadow-lg animate-pulse">
       <div className="h-6 bg-gray-200 rounded w-1/2 mx-auto mb-3"></div>
       <div className="h-10 bg-gray-300 rounded w-1/3 mx-auto"></div>
       <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto mt-2"></div>
     </div>
     
-    {/* Scheletro per la griglia */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {[...Array(3)].map((_, i) => (
         <div key={i} className="rounded-lg bg-white shadow-sm animate-pulse h-48">
@@ -36,17 +34,13 @@ type GroupWithBalance = Group & { totalBalance: number };
 
 export function GroupList() {
   const { user: currentUser } = useAuth();
-  // useQuery gestisce tutto: fetching, caching, loading, errori...
   const { data: groupsWithBalances, isLoading, isError, error } = useQuery({
-    // La chiave della query è unica per l'utente, così se l'utente cambia, i dati vengono ricaricati
     queryKey: ['groups-with-balances', currentUser?.id],
     queryFn: async (): Promise<GroupWithBalance[]> => {
       if (!currentUser) return [];
 
-      // 1. Recupera la lista base di tutti i gruppi
       const groups = await api.getGroups();
       
-      // 2. Per ogni gruppo, recupera le sue spese e calcola il saldo
       const processedGroups = await Promise.all(
         groups.map(async (group) => {
           const expensesWithParticipants = await api.getGroupExpenses(group.id);
@@ -68,11 +62,9 @@ export function GroupList() {
       );
       return processedGroups;
     },
-    // Esegui la query solo se l'utente è loggato
     enabled: !!currentUser,
   });
   
-  // Calcoliamo il saldo aggregato su tutti i gruppi (come prima)
   const overallBalance = groupsWithBalances?.reduce((sum, g) => sum + g.totalBalance, 0) || 0;
 
   if (isLoading) return <LoadingSkeleton />;
@@ -94,7 +86,6 @@ export function GroupList() {
       <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">I tuoi Gruppi</h2>    
         {groupsWithBalances && groupsWithBalances.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Passiamo l'oggetto gruppo "arricchito" alla GroupCard */}
           {groupsWithBalances.map((group) => (
             <GroupCard key={group.id} group={group} />
           ))}

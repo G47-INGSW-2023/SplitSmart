@@ -29,7 +29,6 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
   const [divisionType, setDivisionType] = useState<DivisionType>('manual');
   const [manualAmounts, setManualAmounts] = useState<Record<number, number | ''>>({});
   
-  // Pre-compila il form con i dati esistenti
   useEffect(() => {
     if (isOpen) {
       const initialAmounts: Record<number, number | ''> = {};
@@ -70,14 +69,13 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
 
     if (divisionType === 'equal') {
       const amountPerPerson = numericTotalAmount / 2;
-      // Correzione arrotondamento per evitare errori di un centesimo
       const amount1 = parseFloat(amountPerPerson.toFixed(2));
       const amount2 = numericTotalAmount - amount1;
       division = [
         [currentUser.id, amount1],
         [friend.id, amount2],
       ];
-    } else { // 'manual'
+    } else {
       if (!totalIsCorrect) {
         alert("La somma delle parti non corrisponde all'importo totale.");
         return;
@@ -87,7 +85,6 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
         .map(([userId, amount]) => [Number(userId), Number(amount) as number]);
     }
     
-
     const expenseData: AddExpenseData = {
       desc: description,
       total_amount: numericTotalAmount,
@@ -97,7 +94,6 @@ export default function EditPrivateExpenseModal({ isOpen, onClose, friend, expen
     updateMutation.mutate(expenseData);
   };
 
-  // Creiamo una lista dei partecipanti per usarla nella UI
   const participantDetails = useMemo(() => {
     if (!currentUser) return [friend];
     return [currentUser, friend];

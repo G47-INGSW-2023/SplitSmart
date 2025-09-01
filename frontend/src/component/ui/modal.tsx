@@ -3,7 +3,6 @@
 import { ReactNode } from "react";
 import { Portal } from "./portal"; 
 
-// Assicurati che l'interfaccia sia definita
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,7 +10,6 @@ interface ModalProps {
   children: ReactNode;
 }
 
-// --- LA PAROLA CHIAVE `export` È FONDAMENTALE ---
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null;
   

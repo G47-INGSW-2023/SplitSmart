@@ -1,11 +1,10 @@
-// component/auth/loginForm.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
-import { Input } from '../ui/input'; // Assicurati che il percorso sia corretto
-import { Button } from '../ui/button'; // Assicurati che il percorso sia corretto
+import { Input } from '../ui/input'; 
+import { Button } from '../ui/button'; 
 import Link from 'next/link';
 
 export const LoginForm = () => {
@@ -20,7 +19,7 @@ export const LoginForm = () => {
     setError(null);
     try {
       await login({ email, password });
-      router.push('/groups'); // Reindirizza alla pagina dei gruppi dopo il login
+      router.push('/groups'); 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Credenziali non valide.');
     }

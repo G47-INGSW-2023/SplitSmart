@@ -47,7 +47,6 @@ export default function NotificationItem({ notification, onMarkAsRead }: Notific
     if (!notification.read) {
       onMarkAsRead(notification.id);
     }
-    // Navigazione intelligente
     if (notification.group_id) {
       let url = `/groups/${notification.group_id}`;
       if (notification.expense_id && ['NEW_EXPENSE', 'EXPENSE_UPDATED'].includes(notification.notification_type || '')) {
@@ -55,10 +54,8 @@ export default function NotificationItem({ notification, onMarkAsRead }: Notific
       }
       router.push(url);
     } else if (notification.user_id && ['NEW_EXPENSE', 'EXPENSE_UPDATED', 'EXPENSE_DELETED'].includes(notification.notification_type || '')) {
-      // Spesa privata: linka al profilo dell'amico
       router.push(`/friends/${notification.user_id}`);
     }
-    // Aggiungi 
   };
 
   
@@ -69,28 +66,27 @@ export default function NotificationItem({ notification, onMarkAsRead }: Notific
     }
     const { actor, group } = data;
 
-    // Costruisci il messaggio
     let message: React.ReactNode;
     switch (notification.notification_type) {
       case 'NEW_EXPENSE':
-        if (group) { // Spesa di gruppo
+        if (group) {
           message = <p><strong>{actor.username}</strong> ha aggiunto una spesa nel gruppo <strong>{group.group_name}</strong>.</p>;
-        } else { // Spesa privata
+        } else {
           message = <p><strong>{actor.username}</strong> ha aggiunto una spesa privata.</p>;
         }
         break;
       case 'EXPENSE_UPDATED':
-        if (group) { // Spesa di gruppo
+        if (group) {
           message = <p><strong>{actor.username}</strong> ha modificato una spesa nel gruppo <strong>{group?.group_name}</strong>.</p>;
-        } else { // Spesa privata
+        } else { 
           message = <p><strong>{actor.username}</strong> ha modificato una spesa privata.</p>;
         }
 
         break;
       case 'EXPENSE_DELETED':
-        if (group) { // Spesa di gruppo
+        if (group) { 
           message = <p><strong>{actor.username}</strong> ha cancellato una spesa nel gruppo <strong>{group?.group_name}</strong>.</p>;
-        } else { // Spesa privata
+        } else { 
           message = <p><strong>{actor.username}</strong> ha cancellato una spesa privata.</p>;
         }
         break;
@@ -102,7 +98,7 @@ export default function NotificationItem({ notification, onMarkAsRead }: Notific
         break;
 
       default:
-        message = <p>{notification.message || 'Nuova notifica.'}</p>; // Fallback
+        message = <p>{notification.message || 'Nuova notifica.'}</p>; 
     }
 
      return (

@@ -1,11 +1,10 @@
-// component/auth/registerForm.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Input } from '../ui/input'; // Assicurati che il percorso sia corretto
-import { Button } from '../ui/button'; // Assicurati che il percorso sia corretto
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 import Link from 'next/link';
 
 export const RegisterForm = () => {

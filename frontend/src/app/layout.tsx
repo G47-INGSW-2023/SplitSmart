@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-// 1. Importa i tuoi provider
 import { AuthProvider } from '@/lib/authContext'; 
-import QueryProvider from '@/lib/queryProvider'; // <-- IMPORTA QUI
+import QueryProvider from '@/lib/queryProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,9 +20,6 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={`${inter.className} select-none cursor-default`}>
-            {/* 2. Avvolgi l'applicazione con QueryProvider. 
-            Deve essere all'esterno di qualsiasi componente che usa useQuery/useMutation.
-            Metterlo qui è la scelta più sicura. */}
         <QueryProvider>
           <AuthProvider>
             {children}

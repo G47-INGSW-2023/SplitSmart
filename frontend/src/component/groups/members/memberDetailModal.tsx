@@ -54,7 +54,6 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
   return (
     <Modal isOpen={true} onClose={onClose} title={`Dettagli di ${member.username}`}>
       <div className="space-y-4">
-        {/* Sezione Dettagli Utente */}
         <div className="space-y-3">
           <div>
             <p className="text-xs font-medium text-gray-500">Username</p>
@@ -65,7 +64,6 @@ export default function MemberDetailModal({ member, groupId, onClose, isCurrentU
             <p className="font-semibold text-gray-800">{member.email}</p>
           </div>
         </div>
-
         {isCurrentUserAdmin && (
           <div className="pt-4 border-t space-y-3">            
             {member.isAdmin ? (

@@ -18,47 +18,11 @@ export default function ExpensesTab({ groupId, initialExpenses, onSelectExpense 
   const { user: currentUser } = useAuth();
 
   return (
-    /* 
-          
-
-            
-
-          else {
-            // Renderizza un riepilogo del saldo di gruppo
-            const { group, balance: groupBalance } = item.data;
-            const groupBalanceColor = groupBalance > 0 ? 'text-green-600' : 'text-red-600';
-            return (
-              <li key={`grp-${group.id}`}>
-                <Link
-                  href={`/groups/${group.id}`}
-                  className="block bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500 hover:bg-gray-50"
-                >
-                  <div className="flex flex-row justify-between items-center">
-                    <div>
-                      <p className="font-semibold text-purple-700">{group.group_name}</p>
-                      <p className="text-sm text-gray-500 mt-1">Gruppo condiviso</p>
-                    </div>
-                    <div className={`text-right ${groupBalanceColor}`}>
-                      <p className="text-sm">{groupBalance > 0 ? 'Ti deve' : 'Gli devi'}</p>
-                      <p className="font-bold text-base sm:text-lg">{Math.abs(groupBalance).toFixed(2)} €</p>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            );
-          }
-          })
-         : (
-          <p className="text-center text-gray-500 py-4">Nessuna spesa registrata con questo amico.</p>
-        )}
-      </ul>
- */
     <div className="space-y-6">
       <div className="flex justify-end">
         <Button onClick={() => setIsModalOpen(true)}>Aggiungi Spesa</Button>
       </div>
 
-      
       {initialExpenses && initialExpenses.length > 0 ? (
         <ul className="space-y-3">
           {initialExpenses.map((expenseItem) => {

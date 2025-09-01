@@ -20,27 +20,19 @@ type DivisionType = 'equal' | 'manual';
 export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFriendExpenseModalProps) {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
-
-  // Stati del Form
   const [description, setDescription] = useState('');
   const [totalAmount, setTotalAmount] = useState<number | ''>('');
   const [paidById, setPaidById] = useState(currentUser?.id || null);
   const [divisionType, setDivisionType] = useState<DivisionType>('equal');
-  
-  // Stato per la Divisione Manuale
   const [manualAmounts, setManualAmounts] = useState<Record<number, number | ''>>({});
 
-  // I partecipanti sono solo due: tu e il tuo amico
   const participants = useMemo(() => {
     if (!currentUser) return [friend];
-    // Ordina per mettere sempre l'utente corrente per primo
     return [currentUser, friend].sort((a) => a.id === currentUser.id ? -1 : 1);
   }, [currentUser, friend]);
 
-  // Effetto per resettare il form quando si apre o si chiude
   useEffect(() => {
     if (isOpen && currentUser) {
-      // Imposta i valori di default all'apertura
       setDescription('');
       setTotalAmount('');
       setPaidById(currentUser.id);
@@ -49,7 +41,6 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
     }
   }, [isOpen, currentUser]);
   
-  // Mutazione per aggiungere la spesa
   const addExpenseMutation = useMutation({
     mutationFn: (data: AddExpenseData) => api.addPrivateExpense(data),
     onSuccess: () => {
@@ -63,7 +54,6 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
     },
   });
 
-  // Logica per calcolare la somma manuale e verificare se è corretta
   const { manualSum, totalIsCorrect } = useMemo(() => {
     const numericTotal = Number(totalAmount) || 0;
     const sum = Object.values(manualAmounts).reduce((acc: number, amount) => acc + (Number(amount) || 0), 0);
@@ -73,7 +63,6 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
     };
   }, [manualAmounts, totalAmount]);
 
-  // Gestione dell'invio del form
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!paidById || !currentUser) return;
@@ -87,14 +76,13 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
 
     if (divisionType === 'equal') {
       const amountPerPerson = numericTotalAmount / 2;
-      // Correzione arrotondamento per evitare errori di un centesimo
       const amount1 = parseFloat(amountPerPerson.toFixed(2));
       const amount2 = numericTotalAmount - amount1;
       division = [
         [currentUser.id, amount1],
         [friend.id, amount2],
       ];
-    } else { // 'manual'
+    } else { 
       if (!totalIsCorrect) {
         alert("La somma delle parti non corrisponde all'importo totale.");
         return;
@@ -112,7 +100,6 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
     };
     addExpenseMutation.mutate(expenseData);
   };
-
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Aggiungi spesa con ${friend.username}`}>

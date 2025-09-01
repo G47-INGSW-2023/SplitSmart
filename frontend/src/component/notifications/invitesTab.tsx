@@ -20,7 +20,6 @@ const LoadingSkeleton = () => (
     </div>
 );
 
-
 export default function InvitesTab() {
   const queryClient = useQueryClient();
   const { refetchNotifications } = useAuth(); 
@@ -81,23 +80,16 @@ export default function InvitesTab() {
   return (      
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {enrichedInvites && enrichedInvites.length > 0 ? (
-        // Usiamo `<ul>` e `<li>` per una migliore semantica
         <ul className="divide-y divide-gray-200">
           {enrichedInvites.map(invite => (
             <li key={invite.id} className="p-4">
-              
-              {/* Contenitore principale della riga */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                
-                {/* Sezione testo (cresce per occupare spazio) */}
                 <div className="flex-grow">
                   <p className="text-sm text-gray-800">
                     <strong className="font-semibold">{invite.inviting_user_name}</strong> ti ha invitato a unirti al gruppo <strong className="font-semibold">{invite.group_name}</strong>.
                   </p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(invite.invite_date).toLocaleString('it-IT')}</p>
                 </div>
-                
-                {/* Sezione azioni (non si restringe) */}
                 <div className="flex-shrink-0 self-end sm:self-center">
                   {invite.invite_status === 'PENDING' && (
                     <div className="flex space-x-2">

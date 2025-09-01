@@ -80,10 +80,9 @@ const Sidebar = () => {
 
 const BottomBar = () => {
   const pathname = usePathname();
-  const { unreadNotificationsCount } = useAuth(); // Prendiamo il conteggio
+  const { unreadNotificationsCount } = useAuth();
 
   return (
-    // Mostra su mobile, nascondi su desktop (`lg:hidden`)
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-200 shadow-t-md z-10">
       <div className="flex justify-around">
         {sidebarNavItems.map((item) => {
@@ -120,18 +119,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
 return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* La sidebar per desktop viene renderizzata qui */}
       <Sidebar />
-      
-      {/* Contenuto principale */}
       <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
-        {/* Aggiungiamo un padding-bottom su mobile per non far coprire il contenuto dalla bottom bar */}
         <div className="p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </main>
-      
-      {/* La bottom bar per mobile viene renderizzata qui */}
       <BottomBar />
     </div>
   );

@@ -1,7 +1,6 @@
 import FriendDetailClient from './friendDetailClient';
-import { use } from 'react'; // Importa `use` da React
+import { use } from 'react'; 
 
-// Interfaccia per le props. `params` qui è una Promise
 interface FriendDetailPageProps {
   params: Promise<{
     friendId: string;
@@ -9,7 +8,6 @@ interface FriendDetailPageProps {
 }
 
 export default function FriendDetailPage(props: FriendDetailPageProps) {
-  // `use` srotola la Promise in modo sincrono all'interno di un Server Component
   const params = use(props.params);
   
   const friendId = parseInt(params.friendId, 10);

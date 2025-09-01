@@ -5,7 +5,7 @@ import { Button } from '@/component/ui/button';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { LogOut, User, Mail, Calendar } from 'lucide-react'; // Importiamo delle icone
+import { LogOut, User, Mail, Calendar } from 'lucide-react'; 
 
 const LoadingSkeleton = () => (
     <div className="space-y-6 animate-pulse">
@@ -25,11 +25,10 @@ export default function ProfilePage() {
   const { user: currentUser, logout } = useAuth();
   const router = useRouter();
 
-  // Usiamo useQuery per recuperare i dettagli completi, inclusa la data di registrazione
   const { data: userDetails, isLoading } = useQuery({
     queryKey: ['user-details', currentUser?.id],
     queryFn: () => api.getUserDetails(currentUser!.id),
-    enabled: !!currentUser, // Esegui la query solo quando abbiamo l'ID dell'utente
+    enabled: !!currentUser,
   });
 
   const handleLogout = async () => {
@@ -47,13 +46,9 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-1 md:p-6">
-      {/* Intestazione */}
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Il Tuo Profilo</h1>
-
-      {/* Card con i Dettagli */}
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md">
         <div className="space-y-6">
-          {/* Username */}
           <div className="flex items-center gap-4">
             <User className="h-6 w-6 text-gray-400 flex-shrink-0" />
             <div>
@@ -61,8 +56,6 @@ export default function ProfilePage() {
               <p className="text-lg font-semibold text-gray-800">{userDetails.username}</p>
             </div>
           </div>
-          
-          {/* Email */}
           <div className="flex items-center gap-4 border-t pt-6">
             <Mail className="h-6 w-6 text-gray-400 flex-shrink-0" />
             <div>
@@ -70,8 +63,6 @@ export default function ProfilePage() {
               <p className="text-lg font-semibold text-gray-800">{userDetails.email}</p>
             </div>
           </div>
-
-          {/* Data di Registrazione */}
           <div className="flex items-center gap-4 border-t pt-6">
             <Calendar className="h-6 w-6 text-gray-400 flex-shrink-0" />
             <div>
@@ -85,13 +76,11 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-      
-      {/* Sezione Logout */}
       <div>
         <Button 
           variant="destructive"
           onClick={handleLogout}
-          className="w-full sm:w-auto" // A tutta larghezza su mobile
+          className="w-full sm:w-auto"
         >
           <LogOut className="h-4 w-4 mr-2" />
           Logout

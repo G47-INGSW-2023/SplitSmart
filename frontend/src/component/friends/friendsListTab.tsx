@@ -23,17 +23,14 @@ const LoadingSkeleton = () => (
   </div>
 );
 
-
 export default function FriendsListTab() {
   const { user: currentUser } = useAuth();
-  // const queryClient = useQueryClient();
   
   const { data: friendsWithBalances, isLoading } = useQuery<FriendWithBalance[]>({
     queryKey: ['friends-list', currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
 
-      // 1. Recupera tutti i dati di base in parallelo
       const [friendships, privateExpenses, myGroups] = await Promise.all([
         api.getFriends(),
         api.getPrivateExpenses(),
@@ -52,7 +49,6 @@ export default function FriendsListTab() {
       const friendsWithBalancesPromises = friends.map(async (friend) => {
         let totalBalance = 0;
 
-        // a) Calcola saldo da spese private (logica semplificata)
         privateExpenses
           .filter(([, p]) => p.length === 2 && p.some(u => u.user_id === friend.id))
           .forEach(([expense, participants]) => {
@@ -60,7 +56,6 @@ export default function FriendsListTab() {
             totalBalance += (expense.paid_by === currentUser.id ? myShare : -myShare);
           });
 
-        // b) Calcola saldo dai gruppi in comune  
         myGroups.forEach(group => {
           const groupExpenses = groupExpensesMap.get(group.id) || [];
           let balanceInGroup = 0;
@@ -103,13 +98,10 @@ export default function FriendsListTab() {
                     href={`/friends/${friend.id}`}
                     className="block p-4 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
                   >
-                    {/* --- LAYOUT RESPONSIVE PER LA RIGA --- */}
                     <div className="flex flex-row justify-between sm:items-center gap-2">
-                      {/* Sezione Nome/Email */}
                       <div>
                         <p className="font-medium text-gray-800">{friend.username}</p>
                       </div>
-                      {/* Sezione Saldo */}
                       <div className={`text-right ${balanceColor}`}>
                         {isSettled ?(
                           <p className='font-medium'>In pari</p>

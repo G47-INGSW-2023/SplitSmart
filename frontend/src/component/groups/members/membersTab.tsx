@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/authContext';
 import { ProcessedMember } from '@/types';
 import { Button } from '@/component/ui/button';
 import MemberDetailModal from './memberDetailModal';
-import AddMemberModal from './addMemberModal'; // Importa il nuovo modale
+import AddMemberModal from './addMemberModal';
 
 interface MembersTabProps {
   groupId: number;

@@ -12,8 +12,6 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-1 md:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Centro Notifiche</h1>
-
-      {/* Selettore Tab */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-6" aria-label="Tabs">
           <button
@@ -38,8 +36,6 @@ export default function NotificationsPage() {
           </button>
         </nav>
       </div>
-
-      {/* Contenuto Condizionale delle Tab */}
       <div>
         {activeTab === 'notifications' && <NotificationsTab />}
         {activeTab === 'invites' && <InvitesTab />}

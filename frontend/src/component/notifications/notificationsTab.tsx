@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Notific } from '@/types';
-import NotificationItem from './notificationItem'; // Importa il nuovo componente
+import NotificationItem from './notificationItem'; 
 import { useAuth } from '@/lib/authContext';
 import { useEffect, useRef } from 'react';
 import { formatNotificationMessage } from '@/lib/utils';
@@ -56,22 +56,11 @@ export default function NotificationsTab() {
         
 <div className="bg-white shadow-md rounded-lg overflow-hidden">
   {notifications && notifications.length > 0 ? (
-    // 1. Usa <ul> e `divide-y` per una lista semanticamente corretta e ben separata
     <ul className="divide-y divide-gray-200">
       {notifications.map(notif => (
-        // La chiave ora è sull'elemento `li`
         <li key={notif.id} className={`p-3 sm:p-4 transition-colors ${!notif.read ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
           <div className="flex items-start gap-3 sm:gap-4">
-            
-            {/* Icona (opzionale, ma migliora molto la UI) */}
-            {/* <div className="flex-shrink-0 mt-1">
-              <span className="h-2 w-2 rounded-full bg-blue-500"></span>
-            </div> */}
-
-            {/* Contenuto principale */}
             <div className="flex-grow">
-              
-              {/* Il dispatcher rimane lo stesso */}
               {contextualTypes.includes(notif.notification_type || '') ? (
                 <NotificationItem notification={notif} onMarkAsRead={handleMarkAsRead} />
               ) : (
@@ -91,8 +80,6 @@ export default function NotificationsTab() {
   ) : (
     <p className="p-10 text-center text-gray-500">Nessuna notifica.</p>
   )}
-</div>
-
-  
+</div> 
   );
 }

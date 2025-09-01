@@ -82,7 +82,7 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
           <Button 
             type="submit" 
             disabled={updateMutation.isPending}
-            className="w-full sm:w-auto" // A tutta larghezza su mobile
+            className="w-full sm:w-auto" 
           >
             {updateMutation.isPending ? 'Salvataggio...' : 'Salva Modifiche'}
           </Button>
@@ -91,7 +91,7 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
             variant="secondary" 
             onClick={onClose} 
             disabled={updateMutation.isPending}
-            className="w-full sm:w-auto" // A tutta larghezza su mobile
+            className="w-full sm:w-auto"
           >
             Annulla
           </Button>

@@ -1,7 +1,5 @@
 import * as React from "react";
 
-// --- ESPORTIAMO OGNI PEZZO ---
-
 export const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

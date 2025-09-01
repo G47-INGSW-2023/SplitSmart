@@ -11,7 +11,7 @@ interface PrivateExpenseDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   expenseData: ExpenseWithParticipants;
-  friend: EnrichedFriend; // L'amico coinvolto
+  friend: EnrichedFriend;
   onEditClick: () => void;
 }
 
@@ -20,11 +20,9 @@ export default function PrivateExpenseDetailModal({ isOpen, onClose, expenseData
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
 
-  // Mutazione per cancellare una spesa PRIVATA
   const deleteMutation = useMutation({
     mutationFn: () => api.deletePrivateExpense(expense.id),
     onSuccess: () => {
-      // Invalida le query relative alle spese private e ai dettagli dell'amico
       queryClient.invalidateQueries({ queryKey: ['private-expenses', currentUser?.id] });
       queryClient.invalidateQueries({ queryKey: ['friend-details', friend.id, currentUser?.id] });
       alert("Spesa eliminata con successo.");
@@ -41,7 +39,6 @@ export default function PrivateExpenseDetailModal({ isOpen, onClose, expenseData
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Dettagli: ${expense.desc}`}>
       <div className="space-y-4">
-        {/* Riepilogo (identico a quello del gruppo) */}
         <div className="p-3 sm:p-4 bg-gray-50 rounded-lg space-y-2">
           <div className="flex justify-between items-center text-sm sm:text-base">
             <span className="text-gray-600">Importo Totale</span>
@@ -56,8 +53,6 @@ export default function PrivateExpenseDetailModal({ isOpen, onClose, expenseData
             <span className="font-semibold text-gray-800">{new Date(expense.creation_date).toLocaleDateString('it-IT')}</span>
           </div>
         </div>
-        
-        {/* Divisione (identica, ma mostra solo 2 persone) */}
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">Divisione della spesa</h4>
           <div className="border rounded-lg p-2 space-y-1">

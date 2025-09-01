@@ -77,7 +77,6 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
       const allUserDetails = await Promise.all(
         membersResponse.map(async m => ({...await api.getUserDetails(m.user_id), id: m.user_id}))
       );
-      // const userMap = new Map(allUserDetails.map(u => [u.id, u]));
 
       const membersWithNetBalance = allUserDetails.map(user => ({
         ...user,
@@ -123,7 +122,7 @@ export default function GroupDetailClient({ groupId }: GroupDetailClientProps) {
       );
 
       if (expenseToSelect) {
-        setSelectedExpense(expenseToSelect); // Imposta lo stato locale
+        setSelectedExpense(expenseToSelect); 
         
         const newUrl = `/groups/${groupId}`;
         router.replace(newUrl, { scroll: false });

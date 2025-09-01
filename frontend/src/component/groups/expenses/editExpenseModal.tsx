@@ -37,7 +37,7 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
       const detailedMembersPromises = groupMembers.map(async (member) => {
         const userDetails = await api.getUserDetails(member.user_id);
         return {
-          id: member.user_id, // Aggiungiamo l'ID
+          id: member.user_id,
           username: userDetails.username,
           email: userDetails.email,
         };
@@ -101,7 +101,7 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
       const sumAfterRounding = division.reduce((sum, [, amount]) => sum + amount, 0);
       const remainder = numericTotalAmount - sumAfterRounding;
       if (division.length > 0) division[0][1] += remainder;
-    } else { // 'manual'
+    } else {
       if (!totalIsCorrect) return alert("La somma delle parti non corrisponde all'importo totale.");
       division = Object.entries(manualAmounts)
         .filter(([, amount]) => Number(amount) > 0)
@@ -160,7 +160,6 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
           <button type="button" onClick={() => setDivisionType('manual')} className={`flex-1 py-2 text-sm font-medium text-center transition-colors ${divisionType === 'manual' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}>Divisione Manuale</button>
         </div>
 
-        {/* Lista Membri */}
         <div className="space-y-1 max-h-48 sm:max-h-60 overflow-y-auto pr-2 py-2">
           {isLoadingMembers ? <p>Caricamento membri...</p> : 
             divisionType === 'equal' ? (
@@ -192,7 +191,6 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
           }
         </div>
 
-        {/* Riepilogo Divisione Manuale */}
         {divisionType === 'manual' && (Number(totalAmount) || 0) > 0 && (
           <div className={`p-2 rounded text-sm ${totalIsCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             <p>Totale inserito: {manualSum.toFixed(2)} € di {(Number(totalAmount) || 0).toFixed(2)} €</p>
@@ -200,7 +198,6 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
           </div>
         )}
 
-        {/* Pulsanti Azione */}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:pt-4 border-t">
           <Button 
             type="submit" 
