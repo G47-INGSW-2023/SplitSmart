@@ -62,8 +62,8 @@ export default function InvitesTab() {
   const acceptMutation = useMutation({
     mutationFn: (id: number) => api.acceptInvite(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-invites'] });
-      queryClient.invalidateQueries({ queryKey: ['groups-with-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['group-invites-enriched'] });
+      queryClient.invalidateQueries({ queryKey: ['group-details-simplified'] });
       refetchNotifications();
     },
   });

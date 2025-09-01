@@ -49,8 +49,9 @@ fn remove_friend(user: User, fid: i32) -> Result<Json<Vec<Friendship>>, Status> 
             (friendships::user1
                 .eq(user.id)
                 .and(friendships::user2.eq(fid)))
-            .or(friendships::user2.eq(user.id))
-            .and(friendships::user1.eq(fid)),
+            .or(friendships::user2
+                .eq(user.id)
+                .and(friendships::user1.eq(fid))),
         ),
     )
     .get_results::<Friendship>(&mut conn)

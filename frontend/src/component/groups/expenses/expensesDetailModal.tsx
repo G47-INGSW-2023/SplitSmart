@@ -55,28 +55,6 @@ export default function ExpenseDetailModal({ isOpen, onClose, expenseData, group
   const payerName = (memberIdToNameMap.get(expense.paid_by) || `Utente ID ${expense.paid_by}`) + (currentUser?.id === expense.paid_by ? ' (Tu)' : '');
 
   return (
-    /* 
-        <div className="border-t pt-4 mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-         <Button 
-            variant="destructive" 
-            onClick={() => { if (window.confirm("Sei sicuro di voler eliminare questa spesa?")) { deleteMutation.mutate(); }}} 
-            disabled={deleteMutation.isPending}
-            className="w-full sm:w-auto" 
-          >
-            {deleteMutation.isPending ? 'Eliminazione...' : 'Elimina'}
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={onEditClick} 
-            disabled={deleteMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            Modifica
-          </Button>
-        </div>
-      </div>
-    </Modal>
-    */
     <Modal isOpen={isOpen} onClose={onClose} title={`Dettagli: ${expense.desc}`}>
       <div className="space-y-4">
         <div className="p-3 sm:p-4 bg-gray-50 rounded-lg space-y-2">

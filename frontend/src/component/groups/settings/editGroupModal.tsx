@@ -30,7 +30,7 @@ export default function EditGroupModal({ isOpen, onClose, group }: EditGroupModa
   const updateMutation = useMutation({
     mutationFn: (updatedData: { name: string, description?: string }) => api.updateGroup(group.id, updatedData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-details-processed', group.id] });
+      queryClient.invalidateQueries({ queryKey: ['groups-with-balances', group.id] });
       alert('Gruppo aggiornato con successo!');
       onClose();
     },

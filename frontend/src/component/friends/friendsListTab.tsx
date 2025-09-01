@@ -29,7 +29,7 @@ export default function FriendsListTab() {
   // const queryClient = useQueryClient();
   
   const { data: friendsWithBalances, isLoading } = useQuery<FriendWithBalance[]>({
-    queryKey: ['friends-with-balances', currentUser?.id],
+    queryKey: ['friends-list', currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
 
@@ -86,17 +86,17 @@ export default function FriendsListTab() {
   
   if (isLoading) return <LoadingSkeleton />;
 
-  const friendsWithOpenBalance = friendsWithBalances?.filter(f => Math.abs(f.totalBalance) > 0.01) || [];
-  
   return (
     <div>
-      {friendsWithOpenBalance.length > 0 ? (
+      {friendsWithBalances && friendsWithBalances.length > 0 ? (
         <ul className="space-y-3">
-          {friendsWithOpenBalance
+          {friendsWithBalances
             .sort((a, b) => b.totalBalance - a.totalBalance)
             .map(friend => {
               const balance = friend.totalBalance;
-              const balanceColor = balance > 0 ? 'text-green-600' : 'text-red-600';
+              const balanceColor = balance > 0.01 ? 'text-green-600' : balance < -0.01 ? 'text-red-600': 'text-gray-500';
+              const isSettled = Math.abs(balance) < 0.01;
+
               return (
                 <li key={friend.id}>
                   <Link
@@ -111,8 +111,14 @@ export default function FriendsListTab() {
                       </div>
                       {/* Sezione Saldo */}
                       <div className={`text-right ${balanceColor}`}>
-                        <p className='text-sm'>{balance > 0 ? 'Ti deve' : 'Gli devi'}</p>
-                        <p className='font-semibold'>{Math.abs(balance).toFixed(2)} €</p>
+                        {isSettled ?(
+                          <p className='font-medium'>In pari</p>
+                        ): (
+                          <>
+                            <p className='text-sm'>{balance > 0 ? 'Ti deve' : 'Gli devi'}</p>
+                            <p className='font-semibold'>{Math.abs(balance).toFixed(2)} €</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </Link>
@@ -121,7 +127,7 @@ export default function FriendsListTab() {
             })}
         </ul>
       ) : (
-        <p className="p-10 text-center text-gray-500">Nessun saldo aperto con i tuoi amici.</p>
+        <p className="p-10 text-center text-gray-500">Non hai ancora aggiunto nessun amico.</p>
       )}
     </div>
   );

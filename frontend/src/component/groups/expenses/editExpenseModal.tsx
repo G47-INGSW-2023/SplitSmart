@@ -130,7 +130,7 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
             <Input id="edit-exp-amount" 
               className="text-gray-500" 
               type="number" 
-              value={totalAmount} 
+              placeholder="0" 
               onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value))} 
               required 
               min="0.01" 
@@ -146,7 +146,7 @@ export default function EditExpenseModal({ isOpen, onClose, groupId, expenseData
                 onChange={(e) => setPaidById(Number(e.target.value))} 
                 disabled={isLoadingMembers || updateMutation.isPending} 
                 required 
-                className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500"
+                className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500 px-2"
             >
               {members?.map(member => (
                 <option key={member.id} value={member.id}>{member.username} {member.id === currentUser?.id ? '(Tu)' : ''}</option>

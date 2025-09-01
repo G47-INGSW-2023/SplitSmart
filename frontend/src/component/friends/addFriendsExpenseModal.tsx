@@ -129,7 +129,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
               id="friend-exp-amount"
               className='text-gray-500'
               type="number" 
-              value={totalAmount} 
+              placeholder='0'
               onChange={e => setTotalAmount(e.target.value === '' ? '' : Number(e.target.value) || 0)} 
               required 
               min="0.01" 
@@ -144,7 +144,7 @@ export default function AddFriendExpenseModal({ isOpen, onClose, friend }: AddFr
               onChange={(e) => setPaidById(Number(e.target.value))} 
               required 
               disabled={addExpenseMutation.isPending}
-              className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500"
+              className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500 px-2"
             >
               <option value={currentUser?.id}>{currentUser?.username} (Tu)</option>
               <option value={friend.id}>{friend.username}</option>

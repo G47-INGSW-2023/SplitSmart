@@ -134,7 +134,7 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
         <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-4">
           <div>
             <label htmlFor="exp-amount" className="text-black block text-sm font-medium sm:mb-1">Importo Totale (€)</label>
-            <Input id="exp-amount" type="number" className="text-gray-500" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value) || 0)} required min="0.01" step="0.01" />
+            <Input id="exp-amount" type="number" className="text-gray-500" placeholder='0' onChange={e => setTotalAmount(Number(e.target.value) || 0)} required min="0.01" step="0.01" />
           </div>
           <div>
             <label htmlFor="exp-payer" className="block text-sm font-medium text-gray-700 sm:mb-1">Pagato da</label>
@@ -144,7 +144,7 @@ export default function AddExpenseModal({ groupId, isOpen, onClose }: AddExpense
               onChange={(e) => setPaidById(Number(e.target.value))}
               disabled={isLoadingMembers}
               required
-              className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500"
+              className="w-full h-10 border-gray-300 border-1 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-500 px-2"
             >
               <option value="" disabled>Seleziona un membro</option>
               {members?.map(member => (
