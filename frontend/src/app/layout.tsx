@@ -8,7 +8,7 @@ import QueryProvider from '@/lib/queryProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'SmartSplit',
+  title: 'SplitSmart',
   description: 'Manage the expenses',
 };
 
