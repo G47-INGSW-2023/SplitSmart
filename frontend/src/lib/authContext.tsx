@@ -58,32 +58,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    setIsLoading(true);
     checkAuthStatus().finally(() => setIsLoading(false));
   }, [checkAuthStatus]);
 
-  const login = async (credentials: LoginCredentials) => {
+   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
+    
     try {
       const { userId } = await api.login(credentials);
+      const userData = await api.getUserDetails(userId);
       
-      const userInfo = await api.getUserDetails(userId);
-      
-      const authenticatedUser: User = {
-        id: userId,
-        username: userInfo.username,
-        email: userInfo.email,
-      };
-
+      const authenticatedUser: User = { id: userId, ...userData };
       setUser(authenticatedUser);
-      
-      sessionStorage.setItem('userId', userId.toString());
 
-      queryClient.invalidateQueries({ queryKey: ['unread-count'] }); 
+      sessionStorage.setItem('userId', userId.toString());
+      
+      await queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+
     } catch (error) {
       setUser(null);
       sessionStorage.removeItem('userId');
-      throw error;
+      throw error; 
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setUser(null);
       sessionStorage.removeItem('userId');
+      queryClient.clear();
       setIsLoading(false);
     }
   };
