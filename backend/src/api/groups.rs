@@ -608,3 +608,214 @@ fn view_admins(gid: i32, user: User) -> Result<Json<Vec<GroupMember>>, Status> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Importa le route e le struct dal modulo corrente
+    use crate::api::users::{LoginRequest, RegisterRequest};
+    use rocket::http::{Cookie, ContentType, Status};
+    use rocket::local::blocking::Client;
+    use serde_json::json;
+    use diesel::prelude::*;
+    use crate::establish_connection;
+
+    // --- FUNZIONI HELPER PER I TEST ---
+
+    // Funzione di setup base che pulisce il DB e crea il client.
+    fn setup_client() -> Client {
+        let mut conn = establish_connection();
+        // ... (codice di pulizia del DB come nel file users.rs) ...
+        diesel::delete(crate::schema::expense_participations::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::notifications::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::expenses::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::group_members::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::group_administrators::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::group_invites::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::friendships::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::friend_invites::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::notification_preferences::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::groups::table).execute(&mut conn).unwrap();
+        diesel::delete(crate::schema::users::table).execute(&mut conn).unwrap();
+
+        let rocket = rocket::build()
+            .manage(crate::SessionStore::new())
+            .mount("/user", crate::api::users::get_routes_and_docs(&Default::default()).0)
+            .mount("/groups", crate::api::groups::get_routes_and_docs(&Default::default()).0);
+            // Aggiungi altre route se necessario per i test
+        
+        Client::tracked(rocket).expect("Failed to create a Rocket client for testing")
+    }
+
+    // Helper per registrare un utente e restituire il suo ID e le credenziali.
+    fn register_user(client: &Client, username: &str, email: &str) -> (i32, LoginRequest) {
+        let password = "Password123";
+        let reg_data = json!({
+            "username": username,
+            "email": email,
+            "password": password
+        });
+        let response = client.post("/user/register").body(reg_data.to_string()).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+
+        // Per ottenere l'ID, facciamo il login
+        let login_data = LoginRequest { email: email.to_string(), password: password.to_string() };
+        let login_response = client.post("/user/login").json(&login_data).dispatch();
+        let user_id = login_response.into_json::<i32>().unwrap();
+        (user_id, login_data)
+    }
+
+    // Helper per fare il login e ottenere il cookie.
+    fn login_user(client: &Client, login_data: &LoginRequest) -> Cookie<'static> {
+        let response = client.post("/user/login").json(login_data).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        response.cookies().get("session_id").unwrap().clone()
+    }
+
+    // --- TEST PER LA GESTIONE DEI GRUPPI ---
+
+    /// [GRP-01] Testa la creazione di un gruppo da parte di un utente loggato.
+    #[test]
+    fn test_create_group_as_logged_in_user() {
+        // ARRANGE
+        let client = setup_client();
+        let (_user_id, login_data) = register_user(&client, "groupcreator", "creator@test.com");
+        let cookie = login_user(&client, &login_data);
+
+        let group_data = json!({
+            "name": "Viaggio a Roma",
+            "description": "Spese per il viaggio a Roma 2024"
+        });
+
+        // ACT
+        let response = client.post("/groups/")
+            .cookie(cookie)
+            .header(ContentType::JSON)
+            .body(group_data.to_string())
+            .dispatch();
+
+        // ASSERT
+        assert_eq!(response.status(), Status::Ok, "La creazione del gruppo dovrebbe avere successo");
+        
+        let created_group = response.into_json::<Group>().unwrap();
+        assert_eq!(created_group.group_name, "Viaggio a Roma");
+
+        // Verifica DB: Controlla che l'utente sia membro e admin.
+        let mut conn = establish_connection();
+        let is_mem: bool = diesel::select(exists(crate::schema::group_members::table.find((created_group.id, _user_id)))).get_result(&mut conn).unwrap();
+        let is_adm: bool = diesel::select(exists(crate::schema::group_administrators::table.find((created_group.id, _user_id)))).get_result(&mut conn).unwrap();
+        assert!(is_mem, "Il creatore dovrebbe essere un membro del gruppo");
+        assert!(is_adm, "Il creatore dovrebbe essere un admin del gruppo");
+    }
+
+    /// [GRP-02 & GRP-03 & GRP-04] Testa il ciclo di vita completo di un invito.
+    #[test]
+    fn test_full_invite_lifecycle() {
+        // ARRANGE
+        let client = setup_client();
+        // Utente A (Admin), Utente B (Invitato), Utente C (Non-Admin)
+        let (user_a_id, login_a) = register_user(&client, "admin", "admin@test.com");
+        let (_user_b_id, login_b) = register_user(&client, "invited", "invited@test.com");
+        let (_user_c_id, login_c) = register_user(&client, "nonadmin", "nonadmin@test.com");
+        
+        // Utente A crea un gruppo
+        let cookie_a = login_user(&client, &login_a);
+        let group_response = client.post("/groups/").cookie(cookie_a.clone()).json(&json!({"name": "Gruppo Test"})).dispatch();
+        let group_id = group_response.into_json::<Group>().unwrap().id;
+
+        // Aggiungiamo Utente C come membro non-admin
+        client.post(format!("/groups/{}/members", group_id)).cookie(cookie_a.clone()).json(&json!({"user_id": _user_c_id})).dispatch();
+
+        // --- Test Case GRP-03: Non-admin non può invitare ---
+        let cookie_c = login_user(&client, &login_c);
+        let invite_data = json!({"email": "anotheruser@test.com"});
+        let failed_invite_response = client.post(format!("/groups/{}/members/invite", group_id))
+            .cookie(cookie_c)
+            .json(&invite_data)
+            .dispatch();
+        assert_eq!(failed_invite_response.status(), Status::Unauthorized, "Un non-admin non dovrebbe poter invitare");
+
+        // --- Test Case GRP-02: Admin invita Utente B ---
+        let invite_data_b = json!({"email": "invited@test.com"});
+        let invite_response = client.post(format!("/groups/{}/members/invite", group_id))
+            .cookie(cookie_a)
+            .json(&invite_data_b)
+            .dispatch();
+        assert_eq!(invite_response.status(), Status::Ok, "L'admin dovrebbe poter invitare");
+        let invite_id = invite_response.into_json::<GroupInvite>().unwrap().id;
+
+        // --- Test Case GRP-04: Utente B accetta l'invito ---
+        let cookie_b = login_user(&client, &login_b);
+        let accept_response = client.put(format!("/user/invites/{}/accept", invite_id))
+            .cookie(cookie_b)
+            .dispatch();
+        assert_eq!(accept_response.status(), Status::Ok, "L'utente invitato dovrebbe poter accettare l'invito");
+
+        // Verifica DB: Controlla che Utente B sia ora un membro
+        let mut conn = establish_connection();
+        let is_mem: bool = diesel::select(exists(crate::schema::group_members::table.find((group_id, _user_b_id)))).get_result(&mut conn).unwrap();
+        assert!(is_mem, "L'utente che ha accettato l'invito dovrebbe essere un membro");
+    }
+
+    /// [GRP-05] Testa la rimozione di un membro da parte di un admin.
+    #[test]
+    fn test_remove_member_by_admin() {
+        // ARRANGE
+        let client = setup_client();
+        let (_admin_id, login_admin) = register_user(&client, "admin_remover", "remover@test.com");
+        let (member_id, _login_member) = register_user(&client, "tobe_removed", "removed@test.com");
+        
+        let cookie_admin = login_user(&client, &login_admin);
+        let group_id = client.post("/groups/").cookie(cookie_admin.clone()).json(&json!({"name": "Gruppo di Rimozione"})).dispatch().into_json::<Group>().unwrap().id;
+        
+        // L'admin aggiunge l'altro utente come membro
+        client.post(format!("/groups/{}/members", group_id)).cookie(cookie_admin.clone()).json(&json!({"user_id": member_id})).dispatch();
+
+        // ACT
+        let remove_response = client.delete(format!("/groups/{}/members/{}", group_id, member_id))
+            .cookie(cookie_admin)
+            .dispatch();
+
+        // ASSERT
+        assert_eq!(remove_response.status(), Status::Ok, "La rimozione del membro dovrebbe avere successo");
+        
+        // Verifica DB
+        let mut conn = establish_connection();
+        let is_mem: bool = diesel::select(exists(crate::schema::group_members::table.find((group_id, member_id)))).get_result(&mut conn).unwrap();
+        assert!(!is_mem, "L'utente rimosso non dovrebbe più essere un membro");
+    }
+
+
+    // --- TEST PER LA GESTIONE DELLE SPESE ---
+    
+    /// [EXP-01] Testa l'aggiunta di una spesa valida.
+    #[test]
+    fn test_add_valid_expense() {
+        // ARRANGE
+        let client = setup_client();
+        let (user_a_id, login_a) = register_user(&client, "userA", "a@test.com");
+        let (user_b_id, _login_b) = register_user(&client, "userB", "b@test.com");
+        
+        let cookie_a = login_user(&client, &login_a);
+        let group_id = client.post("/groups/").cookie(cookie_a.clone()).json(&json!({"name":"Gruppo Spese"})).dispatch().into_json::<Group>().unwrap().id;
+        client.post(format!("/groups/{}/members", group_id)).cookie(cookie_a.clone()).json(&json!({"user_id": user_b_id})).dispatch();
+        
+        let expense_data = json!({
+            "desc": "Cena",
+            "total_amount": 100.0,
+            "paid_by": user_a_id,
+            "division": [
+                [user_a_id, 50.0],
+                [user_b_id, 50.0]
+            ]
+        });
+
+        // ACT
+        let response = client.post(format!("/groups/{}/expenses", group_id))
+            .cookie(cookie_a)
+            .json(&expense_data)
+            .dispatch();
+            
+        // ASSERT
+        assert_eq!(response.status(), Status::Ok, "L'aggiunta di una spesa valida dovrebbe avere successo");
+    }
+}
